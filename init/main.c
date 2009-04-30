@@ -63,6 +63,7 @@
 #include <linux/idr.h>
 #include <linux/ftrace.h>
 #include <linux/async.h>
+#include <linux/shmem_fs.h>
 #include <trace/boot.h>
 
 #include <asm/io.h>
@@ -763,6 +764,7 @@ static void __init do_basic_setup(void)
 	rcu_init_sched(); /* needed by module_init stage. */
 	init_workqueues();
 	usermodehelper_init();
+	init_tmpfs();
 	driver_init();
 	init_irq_proc();
 	do_initcalls();
