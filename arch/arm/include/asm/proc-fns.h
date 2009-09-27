@@ -261,7 +261,11 @@
 
 #ifdef CONFIG_MMU
 
-#define cpu_switch_mm(pgd,mm) cpu_do_switch_mm(virt_to_phys(pgd),mm)
+#define cpu_switch_mm(pgd,mm,fcse_switch)			\
+	({							\
+		fcse_switch;					\
+		cpu_do_switch_mm(virt_to_phys(pgd), (mm));	\
+	})
 
 #define cpu_get_pgd()	\
 	({						\
