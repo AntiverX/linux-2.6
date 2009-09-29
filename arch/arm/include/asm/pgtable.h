@@ -255,6 +255,8 @@ extern pgprot_t		pgprot_kernel;
 	struct mm_struct *_mm = (mm);				\
 	unsigned long _addr = (addr);				\
 	unsigned long _val = (val);				\
+	if (pte_present(_val) && ((_val) & L_PTE_SHARED))	\
+		--_mm->context.fcse.shared_dirty_pages;		\
 	if (pte_present(_val) && _addr < TASK_SIZE) {		\
 		if (_addr >= FCSE_TASK_SIZE)			\
 			--_mm->context.fcse.high_pages;		\
@@ -265,6 +267,13 @@ extern pgprot_t		pgprot_kernel;
 	struct mm_struct *_mm = (mm);					\
 	unsigned long _addr = (addr);					\
 	unsigned long _val = (val);					\
+	if (pte_present(_val) && (_val & L_PTE_SHARED)) {		\
+		if ((_val & (PTE_CACHEABLE | L_PTE_WRITE | L_PTE_DIRTY)) \
+		    != (PTE_CACHEABLE | L_PTE_WRITE | L_PTE_DIRTY))	\
+			_val &= ~L_PTE_SHARED;                          \
+		else                                                    \
+			++_mm->context.fcse.shared_dirty_pages;         \
+	}                                                               \
 	if (pte_present(_val)						\
 	    && _addr < TASK_SIZE && _addr >= FCSE_TASK_SIZE)		\
 		++_mm->context.fcse.high_pages;				\
