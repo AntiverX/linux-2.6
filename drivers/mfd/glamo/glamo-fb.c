@@ -880,6 +880,8 @@ int glamofb_cmd_mode(struct glamofb_handle *gfb, int on)
 				  GLAMO_LCD_CMD_TYPE_DISP |
 				  GLAMO_LCD_CMD_DATA_DISP_SYNC);
 
+		mdelay(1);
+                  
 		reg_write(gfb, GLAMO_REG_LCD_COMMAND1,
 			  GLAMO_LCD_CMD_TYPE_DISP |
 			  GLAMO_LCD_CMD_DATA_DISP_FIRE);
