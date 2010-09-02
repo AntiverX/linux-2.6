@@ -19,7 +19,6 @@
 
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
-#include <asm/plat-s3c24xx/neo1973.h>
 
 #include <mach/gta02.h>
 #include <mach/gta02-pm-wlan.h>
@@ -43,26 +42,6 @@ void gta02_wlan_reset(int assert_reset)
 	}
 }
 
-#ifdef CONFIG_PM
-static int gta02_wlan_suspend(struct platform_device *pdev, pm_message_t state)
-{
-	dev_dbg(&pdev->dev, "suspending\n");
-
-	return 0;
-}
-
-static int gta02_wlan_resume(struct platform_device *pdev)
-{
-	dev_dbg(&pdev->dev, "resuming\n");
-
-	return 0;
-}
-#else
-#define gta02_wlan_suspend	NULL
-#define gta02_wlan_resume		NULL
-#endif
-
-
 /* ----- rfkill ------------------------------------------------------------ */
 
 /*
@@ -77,7 +56,6 @@ static int (*gta02_wlan_rfkill_cb)(void *user, int on);
 static void *gta02_wlan_rfkill_user;
 static DEFINE_MUTEX(gta02_wlan_rfkill_lock);
 static int gta02_wlan_rfkill_on;
-
 
 /*
  * gta02_wlan_query_rfkill_lock is used to obtain the rfkill state before the
@@ -102,7 +80,6 @@ void gta02_wlan_query_rfkill_unlock(void)
 	mutex_unlock(&gta02_wlan_rfkill_lock);
 }
 EXPORT_SYMBOL_GPL(gta02_wlan_query_rfkill_unlock);
-
 
 void gta02_wlan_set_rfkill_cb(int (*cb)(void *user, int on), void *user)
 {
@@ -151,9 +128,6 @@ static int __init gta02_wlan_probe(struct platform_device *pdev)
 	struct rfkill *rfkill;
 	int error;
 
-	if (!machine_is_neo1973_gta02())
-		return -EINVAL;
-
 	dev_info(&pdev->dev, "starting\n");
 
 	s3c2410_gpio_cfgpin(GTA02_GPIO_nWLAN_RESET, S3C2410_GPIO_OUTPUT);
@@ -197,8 +171,6 @@ static int gta02_wlan_remove(struct platform_device *pdev)
 static struct platform_driver gta02_wlan_driver = {
 	.probe		= gta02_wlan_probe,
 	.remove		= gta02_wlan_remove,
-	.suspend	= gta02_wlan_suspend,
-	.resume		= gta02_wlan_resume,
 	.driver		= {
 		.name		= "gta02-pm-wlan",
 	},
