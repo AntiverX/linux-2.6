@@ -1195,6 +1195,14 @@ static struct spi_board_info gta02_spi_board_info[] = {
 
 };
 
+static struct glamo_spigpio_info glamo_spigpio_cfg = {
+    .pin_clk    = GLAMO_GPIO10_OUTPUT,
+    .pin_mosi   = GLAMO_GPIO11_OUTPUT,
+    .pin_cs     = GLAMO_GPIO12_OUTPUT,
+    .pin_miso   = 0,
+    .bus_num    = 2,
+};
+
 static void gta02_lis302_chip_select(struct s3c2410_spigpio_info *info, int csid, int cs)
 {
 
@@ -1320,6 +1328,13 @@ static struct s3c2410_hcd_info gta02_usb_info = {
 	},
 };
 
+/*
+ * We need this dummy thing to fill the regulator consumers
+ */
+static struct platform_device gta02_mmc_dev = {
+    /* details filled in by glamo core */
+};
+
 static int glamo_irq_is_wired(void)
 {
 	int rc;
@@ -1351,6 +1366,19 @@ static int glamo_irq_is_wired(void)
 	return -ENODEV;
 }
 
+static int gta02_glamo_can_set_mmc_power(void)
+{
+    switch (S3C_SYSTEM_REV_ATAG) {
+        case GTA02v3_SYSTEM_REV:
+        case GTA02v4_SYSTEM_REV:
+        case GTA02v5_SYSTEM_REV:
+        case GTA02v6_SYSTEM_REV:
+            return 1;
+    }
+
+    return 0;
+}
+
 /* Smedia Glamo 3362 */
 
 /*
@@ -1359,7 +1387,7 @@ static int glamo_irq_is_wired(void)
 
 static int gta02_glamo_mci_use_slow(void)
 {
-    return neo1973_pm_gps_is_on();
+    return gta02_pm_gps_is_on();
 }
 
 static void gta02_glamo_external_reset(int level)
@@ -1431,30 +1459,6 @@ static struct platform_device gta02_glamo_dev = {
         .platform_data  = &gta02_glamo_pdata,
     },
 };
-
-static void mangle_glamo_res_by_system_rev(void)
-{
-    switch (S3C_SYSTEM_REV_ATAG) {
-    case GTA02v1_SYSTEM_REV:
-        break;
-    default:
-        gta02_glamo_resources[2].start = GTA02_GPIO_3D_RESET;
-        gta02_glamo_resources[2].end = GTA02_GPIO_3D_RESET;
-        break;
-    }
-
-    switch (S3C_SYSTEM_REV_ATAG) {
-    case GTA02v1_SYSTEM_REV:
-    case GTA02v2_SYSTEM_REV:
-    case GTA02v3_SYSTEM_REV:
-    /* case GTA02v4_SYSTEM_REV: - FIXME: handle this later */
-        /* The hardware is missing a pull-up resistor and thus can't
-         * support the Smedia Glamo IRQ */
-        gta02_glamo_resources[1].start = 0;
-        gta02_glamo_resources[1].end = 0;
-        break;
-    }
-}
 
 static void mangle_glamo_res_by_system_rev(void)
 {
@@ -1612,7 +1616,7 @@ static void gta02_pmu_attach_child_devices(struct pcf50633 *pcf)
 	platform_add_devices(gta02_devices_pmu_children,
 					ARRAY_SIZE(gta02_devices_pmu_children));
 
-	regulator_has_full_constraints();
+	//regulator_has_full_constraints();
 }
 
 static void gta02_poweroff(void)
