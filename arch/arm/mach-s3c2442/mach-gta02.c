@@ -1419,7 +1419,7 @@ static int gta02_glamo_can_set_mmc_power(void)
 
 static int gta02_glamo_mci_use_slow(void)
 {
-	return neo1973_pm_gps_is_on();
+	return gta02_pm_gps_is_on();
 }
 
 static void gta02_glamo_external_reset(int level)

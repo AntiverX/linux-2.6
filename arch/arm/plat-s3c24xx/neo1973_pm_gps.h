@@ -1,1 +1,1 @@
-extern int neo1973_pm_gps_is_on(void);
+extern int gta02_pm_gps_is_on(void);
