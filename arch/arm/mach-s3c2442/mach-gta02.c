@@ -116,6 +116,10 @@
 
 #include <linux/neo1973_vibrator.h>
 
+#include <linux/spi/spi_gpio.h>
+#include <linux/gpio_keys.h>
+#include <plat/gpio-core.h>
+
 /* arbitrates which sensor IRQ owns the shared SPI bus */
 static spinlock_t motion_irq_lock;
 
@@ -564,7 +568,6 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 
 	.batteries = gta02_batteries,
 	.num_batteries = ARRAY_SIZE(gta02_batteries),
-	.charging_restart_interval = (900 * HZ),
 	.chg_ref_current_ma = 1000,
 
 	.reg_init_data = {
