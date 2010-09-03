@@ -1359,121 +1359,102 @@ static int glamo_irq_is_wired(void)
 
 static int gta02_glamo_mci_use_slow(void)
 {
-	return gta02_pm_gps_is_on();
+    return neo1973_pm_gps_is_on();
 }
 
 static void gta02_glamo_external_reset(int level)
 {
-	s3c2410_gpio_setpin(GTA02_GPIO_3D_RESET, level);
-	s3c2410_gpio_cfgpin(GTA02_GPIO_3D_RESET, S3C2410_GPIO_OUTPUT);
+    s3c2410_gpio_setpin(GTA02_GPIO_3D_RESET, level);
+    s3c2410_gpio_cfgpin(GTA02_GPIO_3D_RESET, S3C2410_GPIO_OUTPUT);
 }
 
-/*
-static struct fb_videomode gta02_glamo_modes[] = {
-	{
-		.name = "480x640",
-		.xres = 480,
-		.yres = 640,
-		.pixclock	= 40816,
-		.left_margin	= 8,
-		.right_margin	= 63,
-		.upper_margin	= 2,
-		.lower_margin	= 4,
-		.hsync_len	= 8,
-		.vsync_len	= 2,
-		.vmode = FB_VMODE_NONINTERLACED,
-	}, {
-		.name = "240x320",
-		.xres = 240,
-		.yres = 320,
-		.pixclock	= 40816,
-		.left_margin	= 8,
-		.right_margin	= 88,
-		.upper_margin	= 2,
-		.lower_margin	= 2,
-		.hsync_len	= 8,
-		.vsync_len	= 2,
-		.vmode = FB_VMODE_NONINTERLACED,
-	}
-};*/
+static struct glamofb_platform_data gta02_glamo_pdata = {
+    .width      = 43,
+    .height     = 58,
+     /* 24.5MHz --> 40.816ns */
+    .pixclock   = 40816,
+    .left_margin    = 8,
+    .right_margin   = 16,
+    .upper_margin   = 2,
+    .lower_margin   = 16,
+    .hsync_len  = 8,
+    .vsync_len  = 2,
+    .fb_mem_size    = 0x400000, /* glamo has 8 megs of SRAM. we use 4 */
+    .xres       = {
+        .min    = 240,
+        .max    = 640,
+        .defval = 480,
+    },
+    .yres       = {
+        .min    = 320,
+        .max    = 640,
+        .defval = 640,
+    },
+    .bpp        = {
+        .min    = 16,
+        .max    = 16,
+        .defval = 16,
+    },
+    //.spi_info = &glamo_spi_cfg,
+    .spigpio_info   = &glamo_spigpio_cfg,
 
-static struct fb_videomode gta02_glamo_modes[] = {
-	{
-		.name = "480x640",
-		.xres = 480,
-		.yres = 640,
-		.pixclock	= 40816,
-		.left_margin	= 8,
-		.right_margin	= 16,
-		.upper_margin	= 2,
-		.lower_margin	= 16,
-		.hsync_len	= 8,
-		.vsync_len	= 2,
-		.vmode = FB_VMODE_NONINTERLACED,
-	}, {
-		.name = "240x320",
-		.xres = 240,
-		.yres = 320,
-		.pixclock	= 40816,
-		.left_margin	= 8,
-		.right_margin	= 16,
-		.upper_margin	= 2,
-		.lower_margin	= 16,
-		.hsync_len	= 8,
-		.vsync_len	= 2,
-		.vmode = FB_VMODE_NONINTERLACED,
-	}
-};
-
-
-static struct glamo_fb_platform_data gta02_glamo_fb_pdata = {
-	.width  = 43,
-	.height = 58,
-
-	.num_modes = ARRAY_SIZE(gta02_glamo_modes),
-	.modes = gta02_glamo_modes,
-};
-
-static struct glamo_mmc_platform_data gta02_glamo_mmc_pdata = {
-	.glamo_mmc_use_slow = gta02_glamo_mci_use_slow,
-};
-
-static struct glamo_platform_data gta02_glamo_pdata = {
-	.fb_data   = &gta02_glamo_fb_pdata,
-	.mmc_data  = &gta02_glamo_mmc_pdata,
-	.gpio_base = GTA02_GPIO_GLAMO_BASE,
-
-	.osci_clock_rate = 32768,
-
-	.glamo_irq_is_wired = glamo_irq_is_wired,
-	.glamo_external_reset = gta02_glamo_external_reset,
+    /* glamo MMC function platform data */
+    .mmc_dev = &gta02_mmc_dev,
+    .glamo_can_set_mci_power = gta02_glamo_can_set_mmc_power,
+    .glamo_mci_use_slow = gta02_glamo_mci_use_slow,
+    .glamo_irq_is_wired = glamo_irq_is_wired,
+    .glamo_external_reset = gta02_glamo_external_reset
 };
 
 static struct resource gta02_glamo_resources[] = {
-	[0] = {
-		.start	= S3C2410_CS1,
-		.end	= S3C2410_CS1 + 0x1000000 - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	[1] = {
-		.start	= GTA02_IRQ_3D,
-		.end	= GTA02_IRQ_3D,
-		.flags	= IORESOURCE_IRQ,
-	},
-	[2] = {
-		.start = GTA02_GPIO_3D_RESET,
-		.end   = GTA02_GPIO_3D_RESET,
-	},
+    [0] = {
+        .start  = S3C2410_CS1,
+        .end    = S3C2410_CS1 + 0x1000000 - 1,
+        .flags  = IORESOURCE_MEM,
+    },
+    [1] = {
+        .start  = GTA02_IRQ_3D,
+        .end    = GTA02_IRQ_3D,
+        .flags  = IORESOURCE_IRQ,
+    },
+    [2] = {
+        .start = GTA02_GPIO_3D_RESET,
+        .end   = GTA02_GPIO_3D_RESET,
+    },
 };
 
 static struct platform_device gta02_glamo_dev = {
-	.name		= "glamo3362",
-	.num_resources	= ARRAY_SIZE(gta02_glamo_resources),
-	.resource	= gta02_glamo_resources,
-	.dev		= {
-		.platform_data	= &gta02_glamo_pdata,
-	},
+    .name       = "glamo3362",
+    .num_resources  = ARRAY_SIZE(gta02_glamo_resources),
+    .resource   = gta02_glamo_resources,
+    .dev        = {
+        .platform_data  = &gta02_glamo_pdata,
+    },
 };
+
+static void mangle_glamo_res_by_system_rev(void)
+{
+    switch (S3C_SYSTEM_REV_ATAG) {
+    case GTA02v1_SYSTEM_REV:
+        break;
+    default:
+        gta02_glamo_resources[2].start = GTA02_GPIO_3D_RESET;
+        gta02_glamo_resources[2].end = GTA02_GPIO_3D_RESET;
+        break;
+    }
+
+    switch (S3C_SYSTEM_REV_ATAG) {
+    case GTA02v1_SYSTEM_REV:
+    case GTA02v2_SYSTEM_REV:
+    case GTA02v3_SYSTEM_REV:
+    /* case GTA02v4_SYSTEM_REV: - FIXME: handle this later */
+        /* The hardware is missing a pull-up resistor and thus can't
+         * support the Smedia Glamo IRQ */
+        gta02_glamo_resources[1].start = 0;
+        gta02_glamo_resources[1].end = 0;
+        break;
+    }
+}
 
 static void mangle_glamo_res_by_system_rev(void)
 {
