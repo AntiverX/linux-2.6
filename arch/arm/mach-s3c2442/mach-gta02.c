@@ -1,7 +1,7 @@
 /*
- * linux/arch/arm/mach-s3c2440/mach-gta02.c
+ * linux/arch/arm/mach-s3c2442/mach-gta02.c
  *
- * S3C2440 Machine Support for the FIC GTA02 (Neo1973)
+ * S3C2442 Machine Support for the Openmoko Freerunner (GTA02)
  *
  * Copyright (C) 2006-2007 by Openmoko, Inc.
  * Author: Harald Welte <laforge@openmoko.org>
@@ -134,10 +134,12 @@ static spinlock_t motion_irq_lock;
 extern int hdq_fiq_handler(void);
 #endif
 
-#ifdef CONFIG_LEDS_NEO1973_VIBRATOR
+#ifdef CONFIG_LEDS_GTA02_VIBRATOR
 #define FIQ_DIVISOR_VIBRATOR DIVISOR_FROM_US(100)
-extern int neo1973_vibrator_fiq_handler(void);
+extern int gta02_vibrator_fiq_handler(void);
 #endif
+
+#if defined(CONFIG_LEDS_GTA02_VIBRATOR) || defined(CONFIG_HDQ_GPIO_BITBANG)
 
 /* Global data related to our fiq source */
 static u32 gta02_fiq_ack_mask;
@@ -159,8 +161,8 @@ static void gta02_fiq_handler(void)
 	 * thankfully and taken care of by the fiq-basis patch
 	 */
 
-#ifdef CONFIG_LEDS_NEO1973_VIBRATOR
-	if (neo1973_vibrator_fiq_handler())
+#ifdef CONFIG_LEDS_GTA02_VIBRATOR
+	if (gta02_vibrator_fiq_handler())
 		divisor = FIQ_DIVISOR_VIBRATOR;
 #endif
 
@@ -182,7 +184,7 @@ static void gta02_fiq_kick(void)
 {
 	unsigned long flags;
 	u32 tcon;
-	
+
 	/* we have to take care about FIQ because this modification is
 	 * non-atomic, FIQ could come in after the read and before the
 	 * writeback and its changes to the register would be lost
@@ -258,6 +260,8 @@ static void gta02_fiq_disable(void)
 }
 /* -------------------- /GTA02 FIQ Handler ------------------------------------- */
 
+#endif
+
 /*
  * this gets called every 1ms when we paniced.
  */
@@ -273,7 +277,7 @@ static long gta02_panic_blink(long count)
 
 	led ^= 1;
 	s3c2410_gpio_cfgpin(GTA02_GPIO_AUX_LED, S3C2410_GPIO_OUTPUT);
-	neo1973_gpb_setpin(GTA02_GPIO_AUX_LED, led);
+	s3c2410_gpio_setpin(GTA02_GPIO_AUX_LED, led);
 
 	last_blink = count;
 	return delay;
@@ -332,18 +336,8 @@ int gta02_get_pcb_revision(void)
 	return u;
 }
 
-struct platform_device gta02_version_device = {
-	.name 		= "neo1973-version",
-	.num_resources	= 0,
-};
-
 struct platform_device gta02_resume_reason_device = {
-	.name 		= "neo1973-resume",
-	.num_resources	= 0,
-};
-
-struct platform_device gta02_memconfig_device = {
-	.name 		= "neo1973-memconfig",
+	.name 		= "gta02-resume",
 	.num_resources	= 0,
 };
 
@@ -388,11 +382,12 @@ static struct s3c2410_uartcfg gta02_uartcfgs[] = {
 struct pcf50633 *gta02_pcf;
 
 #ifdef CONFIG_CHARGER_PCF50633
+#ifdef CONFIG_HDQ_GPIO_BITBANG
 static int gta02_get_charger_online_status(void)
 {
 	struct pcf50633 *pcf = gta02_pcf;
 
-	return pcf50633_mbc_get_usb_online_status(pcf);
+	return pcf50633_mbc_get_status(pcf) & PCF50633_MBC_USB_ONLINE;
 }
 
 static int gta02_get_charger_active_status(void)
@@ -401,6 +396,7 @@ static int gta02_get_charger_active_status(void)
 
 	return pcf50633_mbc_get_status(pcf) & PCF50633_MBC_USB_ACTIVE;
 }
+#endif
 
 #define ADC_NOM_CHG_DETECT_1A 6
 #define ADC_NOM_CHG_DETECT_USB 43
@@ -409,14 +405,14 @@ static void
 gta02_configure_pmu_for_charger(struct pcf50633 *pcf, void *unused, int res)
 {
 	int  ma;
-	       
+
 	/* Interpret charger type */
 	if (res < ((ADC_NOM_CHG_DETECT_USB + ADC_NOM_CHG_DETECT_1A) / 2)) {
 
 		/* Stop GPO driving out now that we have a IA charger */
 		pcf50633_gpio_set(pcf, PCF50633_GPO, 0);
-	
-		ma = 1000;	
+
+		ma = 1000;
 	} else
 		ma = 100;
 
@@ -469,7 +465,7 @@ static void gta02_pmu_force_shutdown(struct pcf50633 *pcf)
 
 static void gta02_udc_vbus_draw(unsigned int ma)
 {
-        if (!gta02_pcf)
+	if (!gta02_pcf)
 		return;
 
 	gta02_usb_vbus_draw = ma;
@@ -481,31 +477,37 @@ static void gta02_udc_vbus_draw(unsigned int ma)
 static int gta02_udc_vbus_status(void)
 {
 	struct pcf50633 *pcf = gta02_pcf;
-
-        if (!gta02_pcf)
+	if (!gta02_pcf)
 		return -ENODEV;
 
-	return pcf50633_mbc_get_usb_online_status(pcf);
+	return !!(pcf50633_mbc_get_status(pcf) & PCF50633_MBC_USB_ONLINE);
 }
+
 #else /* !CONFIG_CHARGER_PCF50633 */
+#ifdef CONFIG_HDQ_GPIO_BITBANG
 #define gta02_get_charger_online_status NULL
 #define gta02_get_charger_active_status NULL
+#endif
 #define gta02_pmu_event_callback        NULL
-#define gta02_pmu_force_shutdown        NULL
 #define gta02_udc_vbus_draw             NULL
-#define gta02_udc_vbus_status           NULL
+#define gta02_udc_vbus_status		NULL
 #endif
 
-static struct platform_device gta01_pm_gps_dev = {
-	.name		= "neo1973-pm-gps",
+
+static struct platform_device gta02_pm_gps_dev = {
+	.name		= "gta02-pm-gps",
 };
 
-static struct platform_device gta01_pm_bt_dev = {
-	.name		= "neo1973-pm-bt",
+static struct platform_device gta02_pm_bt_dev = {
+	.name		= "gta02-pm-bt",
 };
 
 static struct platform_device gta02_pm_gsm_dev = {
-	.name		= "neo1973-pm-gsm",
+	.name		= "gta02-pm-gsm",
+};
+
+static struct platform_device gta02_pm_wlan_dev = {
+	.name		= "gta02-pm-wlan",
 };
 
 /* this is called when pc50633 is probed, unfortunately quite late in the
@@ -521,34 +523,23 @@ static void mangle_glamo_res_by_system_rev(void);
 static void gta02_pmu_attach_child_devices(struct pcf50633 *pcf);
 static void gta02_pmu_regulator_registered(struct pcf50633 *pcf, int id);
 
-static struct platform_device gta02_pm_wlan_dev = {
-	.name		= "gta02-pm-wlan",
-};
-
 static struct regulator_consumer_supply ldo4_consumers[] = {
 	{
-		.dev = &gta01_pm_bt_dev.dev,
+		.dev = &gta02_pm_bt_dev.dev,
 		.supply = "BT_3V2",
 	},
 };
 
 static struct regulator_consumer_supply ldo5_consumers[] = {
 	{
-		.dev = &gta01_pm_gps_dev.dev,
+		.dev = &gta02_pm_gps_dev.dev,
 		.supply = "RF_3V",
 	},
 };
 
-/*
- * We need this dummy thing to fill the regulator consumers
- */
-static struct platform_device gta02_mmc_dev = {
-	/* details filled in by glamo core */
-};
-
 static struct regulator_consumer_supply hcldo_consumers[] = {
 	{
-		.dev = &gta02_mmc_dev.dev,
+		.dev = &gta02_glamo_dev.dev,
 		.supply = "SD_3V3",
 	},
 };
@@ -556,6 +547,8 @@ static struct regulator_consumer_supply hcldo_consumers[] = {
 static char *gta02_batteries[] = {
 	"battery",
 };
+
+#ifdef CONFIG_CHARGER_PCF50633
 
 struct pcf50633_platform_data gta02_pcf_pdata = {
 	.resumers = {
@@ -571,6 +564,7 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 
 	.batteries = gta02_batteries,
 	.num_batteries = ARRAY_SIZE(gta02_batteries),
+	.charging_restart_interval = (900 * HZ),
 	.chg_ref_current_ma = 1000,
 
 	.reg_init_data = {
@@ -581,6 +575,7 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 				.max_uV = 3300000,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
 				.boot_on = 1,
+				.always_on = 1,
 				.apply_uV = 1,
 				.state_mem = {
 					.enabled = 1,
@@ -595,6 +590,7 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 				.max_uV = 1600000,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
 				.boot_on = 1,
+				.always_on = 1,
 				.apply_uV = 1,
 			},
 			.num_consumer_supplies = 0,
@@ -607,6 +603,7 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
 				.apply_uV = 1,
 				.boot_on = 1,
+				.always_on = 1,
 				.state_mem = {
 					.enabled = 1,
 				},
@@ -628,8 +625,8 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 		[PCF50633_REGULATOR_LDO1] = {
 			.constraints = {
 				.name = "GSENSOR_3V3",
-				.min_uV = 1300000,
-				.max_uV = 1300000,
+				.min_uV = 3300000,
+				.max_uV = 3300000,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
 				.apply_uV = 1,
 			},
@@ -668,8 +665,8 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 		[PCF50633_REGULATOR_LDO5] = {
 			.constraints = {
 				.name = "RF_3V",
-				.min_uV = 1500000,
-				.max_uV = 1500000,
+				.min_uV = 3000000,
+				.max_uV = 3000000,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
 				.apply_uV = 1,
 				.state_mem = {
@@ -682,9 +679,11 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 		[PCF50633_REGULATOR_LDO6] = {
 			.constraints = {
 				.name = "LCM_3V",
-				.min_uV = 0,
-				.max_uV = 3300000,
+				.min_uV = 3000000,
+				.max_uV = 3000000,
+				.always_on = 1,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
+				.apply_uV = 1,
 			},
 			.num_consumer_supplies = 0,
 		},
@@ -718,28 +717,21 @@ static void mangle_pmu_pdata_by_system_rev(void)
 		/* FIXME: this is only in v1 due to wrong PMU variant */
 		reg_init_data[PCF50633_REGULATOR_DOWN2]
 					.constraints.state_mem.enabled = 1;
-		break;
-	case GTA02v2_SYSTEM_REV:
-	case GTA02v3_SYSTEM_REV:
-	case GTA02v4_SYSTEM_REV:
-	case GTA02v5_SYSTEM_REV:
-	case GTA02v6_SYSTEM_REV:
+
 		reg_init_data[PCF50633_REGULATOR_LDO1]
-					.constraints.min_uV = 3300000;
+					.constraints.min_uV = 1300000;
 		reg_init_data[PCF50633_REGULATOR_LDO1]
-					.constraints.max_uV = 3300000;
-		reg_init_data[PCF50633_REGULATOR_LDO1]
-					.constraints.state_mem.enabled = 0;
+					.constraints.max_uV = 1300000;
 
 		reg_init_data[PCF50633_REGULATOR_LDO5]
-					.constraints.min_uV = 3000000;
+					.constraints.min_uV = 1500000;
 		reg_init_data[PCF50633_REGULATOR_LDO5]
-					.constraints.max_uV = 3000000;
-		
+					.constraints.max_uV = 1500000;
+
 		reg_init_data[PCF50633_REGULATOR_LDO6]
-					.constraints.min_uV = 3000000;
+					.constraints.min_uV = 0;
 		reg_init_data[PCF50633_REGULATOR_LDO6]
-					.constraints.max_uV = 3000000;
+					.constraints.max_uV = 3300000;
 		reg_init_data[PCF50633_REGULATOR_LDO6]
 					.constraints.apply_uV = 1;
 		break;
@@ -748,33 +740,7 @@ static void mangle_pmu_pdata_by_system_rev(void)
 	}
 }
 
-static int gta02_bat_get_voltage(void)
-{
-	struct pcf50633 *pcf = gta02_pcf;
-	u16 adc, mv = 0;
-	adc = pcf50633_adc_sync_read(pcf,
-		PCF50633_ADCC1_MUX_BATSNS_RES,
-		PCF50633_ADCC1_AVERAGE_16);
-	/* The formula from DS is for divide-by-two mode, current driver uses
-	divide-by-three */
-	mv = (adc * 6000) / 1023;
-	return mv * 1000;
-}
-
-static struct gta01_bat_platform_data gta01_bat_pdata = {
-#ifdef CONFIG_CHARGER_PCF50633
-	.get_charging_status = gta02_get_charger_active_status,
 #endif
-	.get_voltage = gta02_bat_get_voltage,
-};
-
-struct platform_device gta01_bat = {
-	.name = "gta01_battery",
-	.id = -1,
-	.dev = {
-		.platform_data = &gta01_bat_pdata,
-	}
-};
 
 #ifdef CONFIG_HDQ_GPIO_BITBANG
 /* BQ27000 Battery */
@@ -863,7 +829,7 @@ struct platform_device gta02_hdq_device = {
 #endif
 
 
-#ifdef CONFIG_LEDS_NEO1973_VIBRATOR
+#ifdef CONFIG_LEDS_GTA02_VIBRATOR
 /* vibrator (child of FIQ) */
 
 static struct resource gta02_vibrator_resources[] = {
@@ -872,14 +838,14 @@ static struct resource gta02_vibrator_resources[] = {
 		.end	= GTA02_GPIO_VIBRATOR_ON,
 	},
 };
-struct neo1973_vib_platform_data gta02_vib_pdata = {
+struct gta02_vib_platform_data gta02_vib_pdata = {
 	.enable_fiq = gta02_fiq_enable,
 	.disable_fiq = gta02_fiq_disable,
 	.kick_fiq = gta02_fiq_kick,
 };
 
 static struct platform_device gta02_vibrator_dev = {
-	.name		= "neo1973-vibrator",
+	.name		= "gta02-vibrator",
 	.num_resources	= ARRAY_SIZE(gta02_vibrator_resources),
 	.resource	= gta02_vibrator_resources,
 	.dev	 = {
@@ -890,7 +856,7 @@ static struct platform_device gta02_vibrator_dev = {
 
 /* NOR Flash */
 
-#define GTA02_FLASH_BASE	0x18000000 /* GCS3 */
+#define GTA02_FLASH_BASE	S3C2410_CS3 /* GCS3 */
 #define GTA02_FLASH_SIZE	0x200000 /* 2MBytes */
 
 static struct physmap_flash_data gta02_nor_flash_data = {
@@ -974,11 +940,11 @@ static void gta02_udc_command(enum s3c2410_udc_cmd_e cmd)
 	switch (cmd) {
 	case S3C2410_UDC_P_ENABLE:
 		printk(KERN_DEBUG "%s S3C2410_UDC_P_ENABLE\n", __func__);
-		neo1973_gpb_setpin(GTA02_GPIO_USB_PULLUP, 1);
+	    s3c2410_gpio_setpin(GTA02_GPIO_USB_PULLUP, 1);
 		break;
 	case S3C2410_UDC_P_DISABLE:
 		printk(KERN_DEBUG "%s S3C2410_UDC_P_DISABLE\n", __func__);
-		neo1973_gpb_setpin(GTA02_GPIO_USB_PULLUP, 0);
+		s3c2410_gpio_setpin(GTA02_GPIO_USB_PULLUP, 0);
 		break;
 	case S3C2410_UDC_P_RESET:
 		printk(KERN_DEBUG "%s S3C2410_UDC_P_RESET\n", __func__);
@@ -994,8 +960,7 @@ static void gta02_udc_command(enum s3c2410_udc_cmd_e cmd)
 static struct s3c2410_udc_mach_info gta02_udc_cfg = {
 	.vbus_draw	= gta02_udc_vbus_draw,
 	.udc_command	= gta02_udc_command,
-	.get_vbus_status= gta02_udc_vbus_status,
-
+/*	.get_vbus_status = gta02_udc_vbus_status,*/
 };
 
 
@@ -1117,8 +1082,8 @@ static struct platform_device gta02_bl_dev = {
 
 static void gta02_jbt6k74_reset(int devidx, int level)
 {
-	glamo_lcm_reset(level);
-}	
+	gpio_set_value(GTA02_GPIO_GLAMO(4), level);
+}
 
 static void gta02_jbt6k74_probe_completed(struct device *dev)
 {
@@ -1137,21 +1102,6 @@ static void gta02_jbt6k74_probe_completed(struct device *dev)
 const struct jbt6k74_platform_data jbt6k74_pdata = {
 	.reset		= gta02_jbt6k74_reset,
 	.probe_completed = gta02_jbt6k74_probe_completed,
-};
-
-#if 0 /* currently this is not used and we use gpio spi */
-static struct glamo_spi_info glamo_spi_cfg = {
-	.board_size	= ARRAY_SIZE(gta02_spi_board_info),
-	.board_info	= gta02_spi_board_info,
-};
-#endif /* 0 */
-
-static struct glamo_spigpio_info glamo_spigpio_cfg = {
-	.pin_clk	= GLAMO_GPIO10_OUTPUT,
-	.pin_mosi	= GLAMO_GPIO11_OUTPUT,
-	.pin_cs		= GLAMO_GPIO12_OUTPUT,
-	.pin_miso	= 0,
-	.bus_num	= 2,
 };
 
 /*----------- SPI: Accelerometers attached to SPI of s3c244x ----------------- */
@@ -1211,13 +1161,12 @@ struct lis302dl_platform_data lis302_pdata_bottom = {
 static struct spi_board_info gta02_spi_board_info[] = {
 	{
 		.modalias	= "jbt6k74",
-		/* platform_data */
 		.platform_data	= &jbt6k74_pdata,
-		/* controller_data */
+		.controller_data = (void*)GTA02_GPIO_GLAMO(12),
 		/* irq */
 		.max_speed_hz	= 100 * 1000,
 		.bus_num	= 2,
-		/* chip_select */
+		.chip_select = 0
 	},
 	{
 		.modalias	= "lis302dl",
@@ -1300,62 +1249,63 @@ static struct platform_device gta02_spi_gpio_dev = {
 
 /*----------- / SPI: Accelerometers attached to SPI of s3c244x ----------------- */
 
-static struct resource gta02_led_resources[] = {
+static struct gpio_led gta02_gpio_leds[] = {
 	{
 		.name	= "gta02-power:orange",
-		.start	= GTA02_GPIO_PWR_LED1,
-		.end	= GTA02_GPIO_PWR_LED1,
+		.gpio	= GTA02_GPIO_PWR_LED1,
 	}, {
 		.name	= "gta02-power:blue",
-		.start	= GTA02_GPIO_PWR_LED2,
-		.end	= GTA02_GPIO_PWR_LED2,
+		.gpio	= GTA02_GPIO_PWR_LED2,
 	}, {
 		.name	= "gta02-aux:red",
-		.start	= GTA02_GPIO_AUX_LED,
-		.end	= GTA02_GPIO_AUX_LED,
+		.gpio	= GTA02_GPIO_AUX_LED,
 	},
+};
+
+static struct gpio_led_platform_data gta02_gpio_leds_pdata = {
+	.leds = gta02_gpio_leds,
+	.num_leds = ARRAY_SIZE(gta02_gpio_leds),
 };
 
 struct platform_device gta02_led_dev = {
-	.name		= "gta02-led",
-	.num_resources	= ARRAY_SIZE(gta02_led_resources),
-	.resource	= gta02_led_resources,
+	.name = "leds-gpio",
+	.id   = -1,
+	.dev = {
+		.platform_data = &gta02_gpio_leds_pdata,
+	},
 };
 
-static struct resource gta02_button_resources[] = {
-	[0] = {
-		.start = GTA02_GPIO_AUX_KEY,
-		.end   = GTA02_GPIO_AUX_KEY,
+static struct gpio_keys_button gta02_buttons[] = {
+	{
+		.gpio = GTA02_GPIO_AUX_KEY,
+		.code = KEY_PHONE,
+		.desc = "Aux",
+		.type = EV_KEY,
 	},
-	[1] = {
-		.start = GTA02_GPIO_HOLD_KEY,
-		.end   = GTA02_GPIO_HOLD_KEY,
+	{
+		.gpio = GTA02_GPIO_HOLD_KEY,
+		.code = KEY_PAUSE,
+		.desc = "Hold",
+		.type = EV_KEY,
 	},
-	[2] = {
-		.start = GTA02_GPIO_JACK_INSERT,
-		.end   = GTA02_GPIO_JACK_INSERT,
-	},
-	[3] = {
-		.start = 0,
-		.end   = 0,
-	},
-	[4] = {
-		.start = 0,
-		.end   = 0,
-	},
+};
+
+static struct gpio_keys_platform_data gta02_buttons_pdata = {
+	.buttons = gta02_buttons,
+	.nbuttons = ARRAY_SIZE(gta02_buttons),
 };
 
 static struct platform_device gta02_button_dev = {
-	.name		= "neo1973-button",
-	.num_resources	= ARRAY_SIZE(gta02_button_resources),
-	.resource	= gta02_button_resources,
+	.name = "gpio-keys",
+	.id = -1,
+	.dev = {
+		.platform_data = &gta02_buttons_pdata,
+	},
 };
-
 
 static struct platform_device gta02_pm_usbhost_dev = {
-	.name		= "neo1973-pm-host",
+	.name		= "gta02-pm-host",
 };
-
 
 /* USB */
 static struct s3c2410_hcd_info gta02_usb_info = {
@@ -1398,19 +1348,6 @@ static int glamo_irq_is_wired(void)
 	return -ENODEV;
 }
 
-static int gta02_glamo_can_set_mmc_power(void)
-{
-	switch (S3C_SYSTEM_REV_ATAG) {
-		case GTA02v3_SYSTEM_REV:
-		case GTA02v4_SYSTEM_REV:
-		case GTA02v5_SYSTEM_REV:
-		case GTA02v6_SYSTEM_REV:
-			return 1;
-	}
-
-	return 0;
-}
-
 /* Smedia Glamo 3362 */
 
 /*
@@ -1428,42 +1365,85 @@ static void gta02_glamo_external_reset(int level)
 	s3c2410_gpio_cfgpin(GTA02_GPIO_3D_RESET, S3C2410_GPIO_OUTPUT);
 }
 
-static struct glamofb_platform_data gta02_glamo_pdata = {
-	.width		= 43,
-	.height		= 58,
-	 /* 24.5MHz --> 40.816ns */
-	.pixclock	= 40816,
-	.left_margin	= 8,
-	.right_margin	= 16,
-	.upper_margin	= 2,
-	.lower_margin	= 16,
-	.hsync_len	= 8,
-	.vsync_len	= 2,
-	.fb_mem_size	= 0x400000, /* glamo has 8 megs of SRAM. we use 4 */
-	.xres		= {
-		.min	= 240,
-		.max	= 640,
-		.defval	= 480,
-	},
-	.yres		= {
-		.min	= 320,
-		.max	= 640,
-		.defval	= 640,
-	},
-	.bpp		= {
-		.min	= 16,
-		.max	= 16,
-		.defval	= 16,
-	},
-	//.spi_info	= &glamo_spi_cfg,
-	.spigpio_info	= &glamo_spigpio_cfg,
+/*
+static struct fb_videomode gta02_glamo_modes[] = {
+	{
+		.name = "480x640",
+		.xres = 480,
+		.yres = 640,
+		.pixclock	= 40816,
+		.left_margin	= 8,
+		.right_margin	= 63,
+		.upper_margin	= 2,
+		.lower_margin	= 4,
+		.hsync_len	= 8,
+		.vsync_len	= 2,
+		.vmode = FB_VMODE_NONINTERLACED,
+	}, {
+		.name = "240x320",
+		.xres = 240,
+		.yres = 320,
+		.pixclock	= 40816,
+		.left_margin	= 8,
+		.right_margin	= 88,
+		.upper_margin	= 2,
+		.lower_margin	= 2,
+		.hsync_len	= 8,
+		.vsync_len	= 2,
+		.vmode = FB_VMODE_NONINTERLACED,
+	}
+};*/
 
-	/* glamo MMC function platform data */
-	.mmc_dev = &gta02_mmc_dev,
-	.glamo_can_set_mci_power = gta02_glamo_can_set_mmc_power,
-	.glamo_mci_use_slow = gta02_glamo_mci_use_slow,
+static struct fb_videomode gta02_glamo_modes[] = {
+	{
+		.name = "480x640",
+		.xres = 480,
+		.yres = 640,
+		.pixclock	= 40816,
+		.left_margin	= 8,
+		.right_margin	= 16,
+		.upper_margin	= 2,
+		.lower_margin	= 16,
+		.hsync_len	= 8,
+		.vsync_len	= 2,
+		.vmode = FB_VMODE_NONINTERLACED,
+	}, {
+		.name = "240x320",
+		.xres = 240,
+		.yres = 320,
+		.pixclock	= 40816,
+		.left_margin	= 8,
+		.right_margin	= 16,
+		.upper_margin	= 2,
+		.lower_margin	= 16,
+		.hsync_len	= 8,
+		.vsync_len	= 2,
+		.vmode = FB_VMODE_NONINTERLACED,
+	}
+};
+
+
+static struct glamo_fb_platform_data gta02_glamo_fb_pdata = {
+	.width  = 43,
+	.height = 58,
+
+	.num_modes = ARRAY_SIZE(gta02_glamo_modes),
+	.modes = gta02_glamo_modes,
+};
+
+static struct glamo_mmc_platform_data gta02_glamo_mmc_pdata = {
+	.glamo_mmc_use_slow = gta02_glamo_mci_use_slow,
+};
+
+static struct glamo_platform_data gta02_glamo_pdata = {
+	.fb_data   = &gta02_glamo_fb_pdata,
+	.mmc_data  = &gta02_glamo_mmc_pdata,
+	.gpio_base = GTA02_GPIO_GLAMO_BASE,
+
+	.osci_clock_rate = 32768,
+
 	.glamo_irq_is_wired = glamo_irq_is_wired,
-	.glamo_external_reset = gta02_glamo_external_reset
+	.glamo_external_reset = gta02_glamo_external_reset,
 };
 
 static struct resource gta02_glamo_resources[] = {
@@ -1516,6 +1496,22 @@ static void mangle_glamo_res_by_system_rev(void)
 	}
 }
 
+struct spi_gpio_platform_data spigpio_platform_data = {
+	.sck = GTA02_GPIO_GLAMO(10),
+	.mosi = GTA02_GPIO_GLAMO(11),
+	.miso = GTA02_GPIO_GLAMO(5),
+	.num_chipselect = 1,
+};
+
+static struct platform_device spigpio_device = {
+	.name = "spi_gpio",
+	.id   = 2,
+	.dev = {
+		.platform_data = &spigpio_platform_data,
+		.parent        = &gta02_glamo_dev.dev,
+	},
+};
+
 static void __init gta02_map_io(void)
 {
 	s3c24xx_init_io(gta02_iodesc, ARRAY_SIZE(gta02_iodesc));
@@ -1525,14 +1521,14 @@ static void __init gta02_map_io(void)
 
 static irqreturn_t gta02_modem_irq(int irq, void *param)
 {
-	printk(KERN_DEBUG "modem wakeup interrupt\n");
+/*	printk(KERN_DEBUG "modem wakeup interrupt\n");*/
 	gta_gsm_interrupts++;
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t ar6000_wow_irq(int irq, void *param)
 {
-	printk(KERN_DEBUG "ar6000_wow interrupt\n");
+/*	printk(KERN_DEBUG "ar6000_wow interrupt\n");*/
 	return IRQ_HANDLED;
 }
 
@@ -1553,20 +1549,16 @@ __setup("hardware_ecc=", hardware_ecc_setup);
 /* these are the guys that don't need to be children of PMU */
 
 static struct platform_device *gta02_devices[] __initdata = {
-	&gta02_version_device,
 	&s3c_device_usb,
 	&s3c_device_wdt,
-	&gta02_memconfig_device,
 	&s3c_device_sdi,
 	&s3c_device_usbgadget,
 	&s3c_device_nand,
 	&gta02_nor_flash,
-	&s3c_device_adc,
 
 	&s3c24xx_pwm_device,
 	&gta02_led_dev,
 	&gta02_pm_wlan_dev, /* not dependent on PMU */
-
 	&s3c_device_iis,
 	&s3c_device_i2c0,
 };
@@ -1580,8 +1572,17 @@ static struct platform_device *gta02_devices_pmu_children[] = {
 	&gta02_spi_gpio_dev, /* input 2 and 3 */
 	&gta02_button_dev, /* input 4 */
 	&gta02_resume_reason_device,
-	&gta01_bat,
 };
+
+static void gta02_register_glamo(void)
+{
+	platform_device_register(&gta02_glamo_dev);
+	if (gpio_request(GTA02_GPIO_GLAMO(4), "jbt6k74 reset"))
+		printk("gta02: Failed to request jbt6k74 reset pin\n");
+	if (gpio_direction_output(GTA02_GPIO_GLAMO(4), 1))
+		printk("gta02: Failed to configure jbt6k74 reset pin\n");
+	platform_device_register(&spigpio_device);
+}
 
 static void gta02_pmu_regulator_registered(struct pcf50633 *pcf, int id)
 {
@@ -1593,18 +1594,18 @@ static void gta02_pmu_regulator_registered(struct pcf50633 *pcf, int id)
 
 	switch(id) {
 		case PCF50633_REGULATOR_LDO4:
-			pdev = &gta01_pm_bt_dev;
+			pdev = &gta02_pm_bt_dev;
 			break;
 		case PCF50633_REGULATOR_LDO5:
-			pdev = &gta01_pm_gps_dev;
+			pdev = &gta02_pm_gps_dev;
 			break;
 		case PCF50633_REGULATOR_HCLDO:
-			pdev = &gta02_glamo_dev;
-			break;
+			gta02_register_glamo();
+			return;
 		default:
-			return;	
+			return;
 	}
-	
+
 	pdev->dev.parent = &regulator->dev;
 	platform_device_register(pdev);
 }
@@ -1626,12 +1627,65 @@ static void gta02_pmu_attach_child_devices(struct pcf50633 *pcf)
 	mangle_glamo_res_by_system_rev();
 	platform_add_devices(gta02_devices_pmu_children,
 					ARRAY_SIZE(gta02_devices_pmu_children));
+
+	regulator_has_full_constraints();
 }
 
 static void gta02_poweroff(void)
 {
 	pcf50633_reg_set_bit_mask(gta02_pcf, PCF50633_REG_OOCSHDWN,
 		  PCF50633_OOCSHDWN_GOSTDBY, PCF50633_OOCSHDWN_GOSTDBY);
+}
+
+
+/* On hardware rev 5 and earlier the leds are missing a resistor and reading
+ * from their gpio pins will always return 0, so we have to shadow the
+ * led states software */
+static unsigned long gpb_shadow;
+extern struct s3c_gpio_chip s3c24xx_gpios[];
+
+static void gta02_gpb_set(struct gpio_chip *chip,
+			    unsigned offset, int value)
+{
+	void __iomem *base = S3C24XX_GPIO_BASE(S3C2410_GPB0);
+	unsigned long flags;
+	unsigned long dat;
+
+	local_irq_save(flags);
+
+	dat = __raw_readl(base + 0x04) | gpb_shadow;
+	dat &= ~(1 << offset);
+	gpb_shadow &= ~(1 << offset);
+	if (value) {
+		dat |= 1 << offset;
+		switch (offset) {
+		case 0 ... 2:
+			gpb_shadow |= 1 << offset;
+			break;
+		default:
+			break;
+		}
+	}
+	__raw_writel(dat, base + 0x04);
+
+	local_irq_restore(flags);
+}
+
+static int gta02_gpb_get(struct gpio_chip *chip, unsigned offset)
+{
+	void __iomem *base = S3C24XX_GPIO_BASE(S3C2410_GPB0);
+	unsigned long val;
+
+	val = __raw_readl(base + 0x04) | gpb_shadow;
+	val >>= offset;
+	val &= 1;
+
+	return val;
+}
+
+static void gta02_hijack_gpb(void) {
+    s3c24xx_gpios[1].chip.set = gta02_gpb_set;
+    s3c24xx_gpios[1].chip.get = gta02_gpb_get;
 }
 
 static void __init gta02_machine_init(void)
@@ -1650,6 +1704,8 @@ static void __init gta02_machine_init(void)
 	default:
 		break;
 	}
+	if (S3C_SYSTEM_REV_ATAG <= GTA02v5_SYSTEM_REV)
+		gta02_hijack_gpb();
 
 	spin_lock_init(&motion_irq_lock);
 
@@ -1674,17 +1730,20 @@ static void __init gta02_machine_init(void)
 	s3c2410_gpio_setpin(S3C2410_GPD13, 1);
 	s3c2410_gpio_cfgpin(S3C2410_GPD13, S3C2410_GPIO_OUTPUT);
 
+
 	s3c24xx_udc_set_platdata(&gta02_udc_cfg);
 	s3c_i2c0_set_platdata(NULL);
 	set_s3c2410ts_info(&gta02_ts_cfg);
-	
+
 	mangle_glamo_res_by_system_rev();
 
 	i2c_register_board_info(0, gta02_i2c_devs, ARRAY_SIZE(gta02_i2c_devs));
 	spi_register_board_info(gta02_spi_board_info,
 				ARRAY_SIZE(gta02_spi_board_info));
 
+#ifdef CONFIG_CHARGER_PCF50633
 	mangle_pmu_pdata_by_system_rev();
+#endif
 
 	platform_add_devices(gta02_devices, ARRAY_SIZE(gta02_devices));
 
@@ -1714,7 +1773,7 @@ static void __init gta02_machine_init(void)
 	gta02_hdq_device.dev.parent = &s3c24xx_pwm_device.dev;
 	platform_device_register(&gta02_hdq_device);
 #endif
-#ifdef CONFIG_LEDS_NEO1973_VIBRATOR
+#ifdef CONFIG_LEDS_GTA02_VIBRATOR
 	gta02_vibrator_dev.dev.parent = &s3c24xx_pwm_device.dev; 
 	platform_device_register(&gta02_vibrator_dev);
 #endif
@@ -1722,19 +1781,17 @@ static void __init gta02_machine_init(void)
 
 void DEBUG_LED(int n)
 {
-//	int *p = NULL;
 	switch (n) {
 	case 0:
-		neo1973_gpb_setpin(GTA02_GPIO_PWR_LED1, 1);
+		s3c2410_gpio_setpin(GTA02_GPIO_PWR_LED1, 1);
 		break;
 	case 1:
-		neo1973_gpb_setpin(GTA02_GPIO_PWR_LED2, 1);
+		s3c2410_gpio_setpin(GTA02_GPIO_PWR_LED2, 1);
 		break;
 	default:
-		neo1973_gpb_setpin(GTA02_GPIO_AUX_LED, 1);
+		s3c2410_gpio_setpin(GTA02_GPIO_AUX_LED, 1);
 		break;
 	}
-//	printk(KERN_ERR"die %d\n", *p);
 }
 EXPORT_SYMBOL_GPL(DEBUG_LED);
 
