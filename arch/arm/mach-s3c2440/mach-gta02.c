@@ -111,6 +111,7 @@
 #include <linux/jbt6k74.h>
 #include <linux/glamofb.h>
 #include <linux/mfd/glamo.h>
+#include <linux/mfd/glamo-core.h>
 
 #define S3C2410_GPIONO(bank,offset) ((bank) + (offset))
 
@@ -346,7 +347,7 @@ static struct glamo_fb_platform_data gta02_glamo_fb_pdata = {
 	.modes = gta02_glamo_modes,
 };
 
-static struct glamo_mmc_platform_data gta02_glamo_mmc_pdata = {
+static struct glamo_mci_pdata gta02_glamo_mmc_pdata = {
 	.glamo_mmc_use_slow = gta02_glamo_mci_use_slow,
 };
 
