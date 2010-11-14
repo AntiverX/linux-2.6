@@ -1,0 +1,3 @@
+kernel_Force-GPS-power-up-on-resume-if-it-were-powered-up-on-suspend.patch
+0007-Make-PTRACE_SINGLESTEP-work-with-user-helpers.patch
+0008-Do-not-print-debug-messages-on-every-touchscreen-eve.patch

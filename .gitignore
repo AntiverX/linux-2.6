@@ -28,7 +28,7 @@ modules.builtin
 *.gz
 *.bz2
 *.lzma
-*.patch
+#*.patch
 *.gcno
 
 #
@@ -60,8 +60,8 @@ include/generated
 patches-*
 
 # quilt's files
-patches
-series
+#patches
+#series
 
 # cscope files
 cscope.*

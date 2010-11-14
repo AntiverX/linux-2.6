@@ -1,0 +1,40 @@
+From 61ee9012929a406f2a63f43ad055279af08bba3b Mon Sep 17 00:00:00 2001
+From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Date: Sat, 16 Oct 2010 16:15:55 +0300
+Subject: [PATCH] Make PTRACE_SINGLESTEP work with user helpers
+ When userland jumps to kernel provided user helper page to perform
+ operations like __kernel_cmpxchg trace_set_bpt() is unable to add
+ breakpoints. Since single stepping is implemented with breakpoints
+ this means that a process can effectively escape tracing
+ completely. This patch treats jumps to user helper page as
+ instructions that branch to LR since all user helpers return to LR.
+
+---
+ arch/arm/kernel/ptrace.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index 3f562a7..5877c0e 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -26,6 +26,7 @@
+ 
+ #include "ptrace.h"
+ 
++#define REG_LR	14
+ #define REG_PC	15
+ #define REG_PSR	16
+ /*
+@@ -329,6 +330,9 @@ get_branch_address(struct task_struct *child, unsigned long pc, unsigned long in
+ 	    break;
+ 	}
+ 
++	if (alt >= (void*)CONFIG_VECTORS_BASE && alt < (void*)CONFIG_VECTORS_BASE + PAGE_SIZE)
++		alt = get_user_reg(child, REG_LR);
++
+ 	return alt;
+ }
+ 
+-- 
+1.5.6.5
+

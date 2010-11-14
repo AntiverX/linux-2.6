@@ -1,3 +1,21 @@
+linux-2.6-openmoko (20101108.git1508bbb5-1) pkg-fso; urgency=low
+
+  * Merge from qtmoko-v29
+  - CONFIG_HZ=100
+  - Jitterless touch support
+  - UbiFS support
+  * As per request, enabled CONFIG_PROC_EVENTS and CONFIG_TASKSTATS
+  * Add GPS suspend handling patch from Gennady Kupava
+  - Needs also qi or fixed u-boot
+  * Add also disabled patches which were missing from git
+  * From lindi's patches:
+  - Magic sysrq key enabled
+  - Make PTRACE_SINGLESTEP work with user helpers
+  - Do not print debug messages on every touchscreen event
+  - Resume reason patch included, but disabled since fails to build
+
+ -- Timo Jyrinki <timo@debian.org>  Sat, 13 Nov 2010 15:53:24 +0200
+
 linux-2.6-openmoko (20100921.gitec52149c-2) pkg-fso; urgency=low
 
   * Fix local version
