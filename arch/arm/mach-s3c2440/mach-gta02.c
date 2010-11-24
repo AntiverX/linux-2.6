@@ -153,6 +153,10 @@ static long gta02_panic_blink(long count)
 	return delay;
 }
 
+struct platform_device gta02_resume_reason_device = {
+	.name 		= "neo1973-resume",
+	.num_resources	= 0,
+};
 
 static struct map_desc gta02_iodesc[] __initdata = {
 	{
@@ -721,7 +725,7 @@ struct pcf50633_platform_data gta02_pcf_pdata = {
 				.min_uV = 3300000,
 				.max_uV = 3300000,
 				.valid_modes_mask = REGULATOR_MODE_NORMAL,
-				.always_on = 1,
+				.always_on = 0,
 				.apply_uV = 1,
 				.state_mem = {
 					.enabled = 1,
@@ -1310,6 +1314,7 @@ static struct platform_device *gta02_devices[] __initdata = {
 static struct platform_device *gta02_devices_pmu_children[] = {
     &gta02_hdq_device,
 	&gta02_platform_bat,
+	&gta02_resume_reason_device,
 };
 
 /*

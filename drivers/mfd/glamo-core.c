@@ -42,7 +42,7 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
 #include <linux/pm.h>
 
@@ -246,10 +246,25 @@ static struct resource glamo_fb_resources[] = {
 		.flags	= IORESOURCE_MEM,
 	}, {
 		.name	= "glamo-fb-mem",
-		.start	= GLAMO_OFFSET_FB,
-		.end	= GLAMO_OFFSET_FB + GLAMO_FB_SIZE - 1,
+		.start	= GLAMO_MEM_BASE + GLAMO_OFFSET_FB,
+		.end	= GLAMO_MEM_BASE + GLAMO_OFFSET_FB + GLAMO_FB_SIZE - 1,
 		.flags	= IORESOURCE_MEM,
-	},
+	}, {
+		.name	= "glamo-cmdq-regs",
+		.start  = GLAMO_REGOFS_CMDQUEUE,
+		.end    = GLAMO_REGOFS_RISC - 1,
+		.flags  = IORESOURCE_MEM,
+	}, {
+		.name	= "glamo-2d-regs",
+		.start  = GLAMO_REGOFS_2D,
+		.end    = GLAMO_REGOFS_3D- 1,
+		.flags  = IORESOURCE_MEM,
+	}, {
+		.name	= "glamo-2d-irq",
+		.start	= GLAMO_IRQ_2D,
+		.end	= GLAMO_IRQ_2D,
+		.flags	= IORESOURCE_IRQ,
+	}
 };
 
 static struct resource glamo_mmc_resources[] = {
@@ -260,9 +275,9 @@ static struct resource glamo_mmc_resources[] = {
 		.flags	= IORESOURCE_MEM
 	}, {
 		.name	= "glamo-mmc-mem",
-		.start	= GLAMO_OFFSET_FB + GLAMO_FB_SIZE,
-		.end	= GLAMO_OFFSET_FB + GLAMO_FB_SIZE +
-				  GLAMO_MMC_BUFFER_SIZE - 1,
+		.start	= GLAMO_MEM_BASE + GLAMO_OFFSET_MMC,
+		.end	= GLAMO_MEM_BASE + GLAMO_OFFSET_MMC
+		                         + GLAMO_MMC_BUFFER_SIZE - 1,
 		.flags	= IORESOURCE_MEM
 	}, {
 		.start	= GLAMO_IRQ_MMC,
@@ -375,6 +390,12 @@ static void glamo_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
 	desc->status &= ~IRQ_INPROGRESS;
 }
 
+struct glamo_engine_reg_set {
+	uint16_t reg;
+	uint16_t mask_suspended;
+	uint16_t mask_enabled;
+};
+
 /*
 debugfs
 */
@@ -443,7 +464,8 @@ static void glamo_init_debugfs(struct glamo_core *glamo)
 {
 	glamo->debugfs_dir = debugfs_create_dir("glamo3362", NULL);
 	if (glamo->debugfs_dir)
-		debugfs_create_file("regs", S_IRUGO | S_IWUSR, glamo->debugfs_dir,
+		debugfs_create_file("regs", S_IRUGO | S_IWUSR,
+				    glamo->debugfs_dir,
 				    glamo, &debugfs_regs_ops);
 	else
 		dev_warn(&glamo->pdev->dev, "Failed to set up debugfs.\n");
@@ -522,6 +544,23 @@ static const struct glamo_engine_reg_set glamo_2d_regs[] = {
 	}
 };
 
+static const struct glamo_engine_reg_set glamo_3d_regs[] = {
+	{ GLAMO_REG_CLOCK_3D,
+	GLAMO_CLOCK_3D_EN_M8CLK |
+	GLAMO_CLOCK_3D_DG_M8CLK,
+
+	GLAMO_CLOCK_3D_EN_ECLK |
+	GLAMO_CLOCK_3D_DG_ECLK,
+
+	GLAMO_CLOCK_3D_EN_RCLK |
+	GLAMO_CLOCK_3D_DG_RCLK
+	},
+	{ GLAMO_REG_CLOCK_GEN5_1,
+	0,
+	GLAMO_CLOCK_GEN51_EN_DIV_GCLK,
+	}
+};
+
 static const struct glamo_engine_reg_set glamo_cmdq_regs[] = {
 	{ GLAMO_REG_CLOCK_2D,
 	GLAMO_CLOCK_2D_EN_M6CLK,
@@ -543,6 +582,8 @@ static const struct glamo_engine_desc glamo_engines[] = {
 					glamo_mmc_regs),
 	[GLAMO_ENGINE_2D] = GLAMO_ENGINE("2D", GLAMO_HOSTBUS2_MMIO_EN_2D,
 					glamo_2d_regs),
+	[GLAMO_ENGINE_3D] = GLAMO_ENGINE("3D", GLAMO_HOSTBUS2_MMIO_EN_3D,
+					glamo_3d_regs),
 	[GLAMO_ENGINE_CMDQ] = GLAMO_ENGINE("CMDQ", GLAMO_HOSTBUS2_MMIO_EN_CQ,
 					glamo_cmdq_regs),
 };
@@ -566,6 +607,7 @@ int __glamo_engine_enable(struct glamo_core *glamo, enum glamo_engine engine)
 	case GLAMO_ENGINE_LCD:
 	case GLAMO_ENGINE_MMC:
 	case GLAMO_ENGINE_2D:
+	case GLAMO_ENGINE_3D:
 	case GLAMO_ENGINE_CMDQ:
 		break;
 	default:
@@ -612,6 +654,7 @@ int __glamo_engine_disable(struct glamo_core *glamo, enum glamo_engine engine)
 	case GLAMO_ENGINE_MMC:
 	case GLAMO_ENGINE_2D:
 	case GLAMO_ENGINE_CMDQ:
+	case GLAMO_ENGINE_3D:
 		break;
 	default:
 		return -EINVAL;
@@ -703,6 +746,10 @@ static const struct glamo_script reset_regs[] = {
 	},
 	[GLAMO_ENGINE_2D] = {
 		GLAMO_REG_CLOCK_2D, GLAMO_CLOCK_2D_RESET
+	},
+	[GLAMO_ENGINE_3D] = {
+		GLAMO_REG_CLOCK_3D, GLAMO_CLOCK_3D_BACK_RESET |
+		                    GLAMO_CLOCK_3D_FRONT_RESET
 	},
 	[GLAMO_ENGINE_JPEG] = {
 		GLAMO_REG_CLOCK_JPEG, GLAMO_CLOCK_JPEG_RESET
