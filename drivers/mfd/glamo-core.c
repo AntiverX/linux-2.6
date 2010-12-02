@@ -486,12 +486,6 @@ static void glamo_exit_debugfs(struct glamo_core *glamo)
 }
 #endif
 
-struct glamo_engine_reg_set {
-	uint16_t reg;
-	uint16_t mask_suspended;
-	uint16_t mask_enabled;
-};
-
 struct glamo_engine_desc {
 	const char *name;
 	uint16_t hostbus;

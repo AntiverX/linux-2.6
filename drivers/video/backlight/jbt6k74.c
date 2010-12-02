@@ -219,7 +219,6 @@ static int jbt_init_regs(struct jbt_info *jbt)
 	ret |= jbt_reg_write(jbt, JBT_REG_ASW_SLEW, 0x00 | (1 << 5));
 	ret |= jbt_reg_write(jbt, JBT_REG_DUMMY_DISPLAY, 0xff);
 
-
 	ret |= jbt_reg_write(jbt, JBT_REG_SLEEP_OUT_FR_A, 0x11);
 	ret |= jbt_reg_write(jbt, JBT_REG_SLEEP_OUT_FR_B, 0x11);
 	ret |= jbt_reg_write(jbt, JBT_REG_SLEEP_OUT_FR_C, 0x11);
@@ -269,9 +268,7 @@ static int jbt_off_to_normal(struct jbt_info *jbt)
 
 	gpio_set_value_cansleep(pdata->gpio_reset, 1);
 	ret = regulator_bulk_enable(ARRAY_SIZE(jbt->supplies), jbt->supplies);
-	mdelay (200);
-
-	mdelay(120);
+	mdelay(200);
 
 	/* three times command zero */
 	ret |= jbt_reg_write_nodata(jbt, 0x00);
@@ -287,12 +284,13 @@ static int jbt_off_to_normal(struct jbt_info *jbt)
 	if (ret != 0)
 		printk (KERN_ERR "Ignored ret value:%i",ret);
 
+	ret |= jbt_reg_write(jbt, JBT_REG_DISPLAY_MODE, 0x28);
 
 	/* (re)initialize register set */
 	ret |= jbt_init_regs(jbt);
-
 	if (ret != 0)
 		printk (KERN_ERR "Ignored ret value2:%i",ret);
+
 
 	/* Make sure we are 120 ms after SLEEP_OUT */
 	if (time_before(jiffies, jbt->next_sleep))
@@ -666,7 +664,7 @@ static int jbt6k74_set_power(struct lcd_device *ld, int power)
 	case FB_BLANK_POWERDOWN:
 		dev_dbg(&jbt->spi->dev, "powerdown\n");
 		//ret = schedule_delayed_work(&jbt->blank_work, HZ);
-		jbt6k74_enter_power_mode(jbt, JBT_POWER_MODE_DEEP_STANDBY);
+		jbt6k74_enter_power_mode(jbt, JBT_POWER_MODE_OFF);
 		ret = 1;
 		break;
 	default:
