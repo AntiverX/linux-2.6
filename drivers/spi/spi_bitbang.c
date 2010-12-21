@@ -261,9 +261,8 @@ spi_bitbang_transfer_sync(struct spi_device *spi, struct spi_message *m)
 	struct spi_bitbang *bitbang = spi_master_get_devdata(spi->master);
 	struct spi_transfer *t;
 	unsigned long flags;
-	int cs_change = 1;
 	int status;
-	int nsecs;
+		int			do_setup = -1;
 	int (*setup_transfer)(struct spi_device *, struct spi_transfer *);
 
 	/* FIXME this is made-up ... the correct value is known to
@@ -289,6 +288,8 @@ spi_bitbang_transfer_sync(struct spi_device *spi, struct spi_message *m)
 			status = setup_transfer(spi, t);
 			if (status < 0)
 				break;
+				if (do_setup == -1)
+					do_setup = 0;
 		}
 
 		/* set up default clock polarity, and activate chip;
@@ -349,10 +350,6 @@ spi_bitbang_transfer_sync(struct spi_device *spi, struct spi_message *m)
 	m->status = status;
 	if (m->complete)
 		m->complete(m->context);
-
-	/* restore speed and wordsize */
-	if (setup_transfer)
-		setup_transfer(spi, NULL);
 
 	/* normally deactivate chipselect ... unless no error and
 	 * cs_change has hinted that the next message will probably
