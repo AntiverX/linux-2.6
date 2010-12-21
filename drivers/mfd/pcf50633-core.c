@@ -330,7 +330,6 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
 	return 0;
 
 err_free:
-	i2c_set_clientdata(client, NULL);
 	kfree(pcf);
 
 	return ret;
