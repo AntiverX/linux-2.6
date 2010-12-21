@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
- *  	PCF50633 backlight device driver
+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
+ *      PCF50633 backlight device driver
  *
  *  This program is free software; you can redistribute	 it and/or modify it
  *  under  the terms of	 the GNU General  Public License as published by the
@@ -35,7 +35,7 @@ struct pcf50633_bl {
 /*
  * pcf50633_bl_set_brightness_limit
  *
- * Update the brightness limit for the pc50633 backlight. The actuall brightness
+ * Update the brightness limit for the pc50633 backlight. The actual brightness
  * will not go above the limit. This is useful to limit power drain for example
  * on low battery.
  *
@@ -44,7 +44,7 @@ struct pcf50633_bl {
  */
 int pcf50633_bl_set_brightness_limit(struct pcf50633 *pcf, unsigned int limit)
 {
-	struct pcf50633_bl *pcf_bl = pcf->bl;
+	struct pcf50633_bl *pcf_bl = platform_get_drvdata(pcf->bl_pdev);
 
 	if (!pcf_bl)
 		return -ENODEV;
@@ -93,7 +93,7 @@ static int pcf50633_bl_get_brightness(struct backlight_device *bl)
 	return pcf_bl->brightness;
 }
 
-static struct backlight_ops pcf50633_bl_ops = {
+static const struct backlight_ops pcf50633_bl_ops = {
 	.get_brightness = pcf50633_bl_get_brightness,
 	.update_status	= pcf50633_bl_update_status,
 	.options	= BL_CORE_SUSPENDRESUME,
@@ -102,9 +102,9 @@ static struct backlight_ops pcf50633_bl_ops = {
 static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
 {
 	int ret;
-	struct pcf50633 *pcf = dev_to_pcf50633(pdev->dev.parent);
 	struct pcf50633_bl *pcf_bl;
-	struct pcf50633_platform_data *pcf50633_data = pdev->dev.parent->platform_data;
+	struct device *parent = pdev->dev.parent;
+	struct pcf50633_platform_data *pcf50633_data = parent->platform_data;
 	struct pcf50633_bl_platform_data *pdata = pcf50633_data->backlight_data;
 	struct backlight_properties bl_props;
 
@@ -123,7 +123,7 @@ static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
 		pcf_bl->brightness_limit = 0x3f;
 	}
 
-	pcf_bl->pcf = pcf;
+	pcf_bl->pcf = dev_to_pcf50633(pdev->dev.parent);
 
 	pcf_bl->bl = backlight_device_register(pdev->name, &pdev->dev, pcf_bl,
 						&pcf50633_bl_ops, &bl_props);
@@ -133,12 +133,11 @@ static int __devinit pcf50633_bl_probe(struct platform_device *pdev)
 		goto err_free;
 	}
 
-	pcf->bl = pcf_bl;
 	platform_set_drvdata(pdev, pcf_bl);
 
 	pcf50633_reg_write(pcf_bl->pcf, PCF50633_REG_LEDDIM, pdata->ramp_time);
 
-	/* Should be different from bl_props.brightness, so we don't
+	/* Should be different from bl_props.brightness, so we do not exit
 	 * update_status early the first time it's called */
 	pcf_bl->brightness = pcf_bl->bl->props.brightness + 1;
 
@@ -155,8 +154,6 @@ err_free:
 static int __devexit pcf50633_bl_remove(struct platform_device *pdev)
 {
 	struct pcf50633_bl *pcf_bl = platform_get_drvdata(pdev);
-
-	pcf_bl->pcf->bl = NULL;
 
 	backlight_device_unregister(pcf_bl->bl);
 

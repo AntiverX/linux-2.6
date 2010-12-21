@@ -28,7 +28,7 @@
 int pcf50633_register_irq(struct pcf50633 *pcf, int irq,
 			void (*handler) (int, void *), void *data)
 {
-	if (irq < 0 || irq > PCF50633_NUM_IRQ || !handler)
+	if (irq < 0 || irq >= PCF50633_NUM_IRQ || !handler)
 		return -EINVAL;
 
 	if (WARN_ON(pcf->irq_handler[irq].handler))
@@ -45,7 +45,7 @@ EXPORT_SYMBOL_GPL(pcf50633_register_irq);
 
 int pcf50633_free_irq(struct pcf50633 *pcf, int irq)
 {
-	if (irq < 0 || irq > PCF50633_NUM_IRQ)
+	if (irq < 0 || irq >= PCF50633_NUM_IRQ)
 		return -EINVAL;
 
 	mutex_lock(&pcf->lock);
@@ -302,9 +302,8 @@ int pcf50633_irq_init(struct pcf50633 *pcf, int irq)
 					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 					"pcf50633", pcf);
 
-	if (ret) {
+	if (ret)
 		dev_err(pcf->dev, "Failed to request IRQ %d\n", ret);
-	}
 
 	if (enable_irq_wake(irq) < 0)
 		dev_err(pcf->dev, "IRQ %u cannot be enabled as wake-up source"

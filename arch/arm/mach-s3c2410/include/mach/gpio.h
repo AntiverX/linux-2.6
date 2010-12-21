@@ -20,7 +20,10 @@
  * devices that need GPIO.
  */
 
-#define ARCH_NR_GPIOS	(512 + CONFIG_S3C24XX_GPIO_EXTRA)
+#ifdef CONFIG_CPU_S3C244X
+#define ARCH_NR_GPIOS	(32 * 9 + CONFIG_S3C24XX_GPIO_EXTRA)
+#else
+#endif
 
 #include <asm-generic/gpio.h>
 #include <mach/gpio-nrs.h>
@@ -28,3 +31,6 @@
 #include <mach/regs-gpioj.h>
 
 #define S3C_GPIO_END	(S3C2440_GPIO_BANKJ + 32)
+#define S3C_GPIO_END	(S3C2410_GPIO_BANKJ + 32)
+#else
+#endif

@@ -1923,9 +1923,8 @@ static int restore_regs(struct mmc_host *mmc)
 static int s3cmci_suspend(struct device *dev)
 {
 	struct mmc_host *mmc = platform_get_drvdata(to_platform_device(dev));
-	struct pm_message event = { PM_EVENT_SUSPEND };
 
-	return save_regs(mmc);
+	return mmc_suspend_host(mmc);
 }
 
 static int s3cmci_resume(struct device *dev)

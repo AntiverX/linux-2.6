@@ -157,6 +157,7 @@ struct pcf50633 {
 	struct pcf50633_mbc *mbc;
 	struct pcf50633_adc *adc;
 	struct pcf50633_bl *bl;
+	struct platform_device *bl_pdev;
 };
 
 enum pcf50633_reg_int1 {
