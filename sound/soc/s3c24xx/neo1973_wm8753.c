@@ -253,7 +253,6 @@ static const struct snd_kcontrol_new wm8753_neo1973_controls[] = {
 
 /* GTA01 specific controlls */
 
-static struct snd_soc_card neo1973;
 static struct snd_soc_jack hs_jack;
 
 #ifdef CONFIG_MACH_NEO1973_GTA01
@@ -345,7 +344,7 @@ static struct snd_soc_jack_gpio hs_jack_gpios[] = {
 
 
 
-static int neo1973_wm8753_init(struct snd_soc_codec *codec)
+static int neo1973_wm8753_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
 	int err;
@@ -424,7 +423,7 @@ static int neo1973_wm8753_init(struct snd_soc_codec *codec)
 
 	snd_soc_dapm_sync(codec);
 
-	err = snd_soc_jack_new(&neo1973, "Headset Jack", SND_JACK_HEADSET, &hs_jack);
+	err = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET, &hs_jack);
 	if (err) {
 		dev_err(codec->card->dev, "failed to alloc headset jack\n");
 		return err;
