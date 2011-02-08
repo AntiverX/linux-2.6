@@ -48,14 +48,14 @@ static struct console *find_s3c24xx_console(void)
 {
 	struct console *con;
 
-	acquire_console_sem();
+	console_lock();
 
 	for (con = console_drivers; con; con = con->next) {
 		if (!strcmp(con->name, "ttySAC"))
 			break;
 	}
 
-	release_console_sem();
+	console_unlock();
 
 	return con;
 }

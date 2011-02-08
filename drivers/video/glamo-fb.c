@@ -870,9 +870,9 @@ static int glamofb_suspend(struct device *dev)
 {
 	struct glamofb_handle *gfb = dev_get_drvdata(dev);
 
-	acquire_console_sem();
+	console_lock();
 	fb_set_suspend(gfb->fb, 1);
-	release_console_sem();
+	console_unlock();
 
 	/* seriously -- nobody is allowed to touch glamo memory when we
 	 * are suspended or we lock on nWAIT
@@ -897,9 +897,9 @@ static int glamofb_resume(struct device *dev)
 	glamofb_cursor_onoff(gfb, 1);
 #endif
 
-	acquire_console_sem();
+	console_lock();
 	fb_set_suspend(gfb->fb, 0);
-	release_console_sem();
+	console_unlock();
 
 	return 0;
 }
