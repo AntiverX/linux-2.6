@@ -44,6 +44,11 @@ pgd_t *get_pgd_slow(struct mm_struct *mm)
 	clean_dcache_area(new_pgd, PTRS_PER_PGD * sizeof(pgd_t));
 
 	if (!vectors_high()) {
+#ifdef CONFIG_ARM_FCSE
+		/* FCSE does not work without high vectors. */
+		BUG();
+#endif /* CONFIG_ARM_FCSE */
+
 		/*
 		 * On ARM, first page must always be allocated since it
 		 * contains the machine vectors.
@@ -82,7 +87,7 @@ void free_pgd_slow(struct mm_struct *mm, pgd_t *pgd)
 		return;
 
 	/* pgd is always present and good */
-	pmd = pmd_off(pgd, 0);
+	pmd = pmd_off(pgd + pgd_index(fcse_va_to_mva(mm, 0)), 0);
 	if (pmd_none(*pmd))
 		goto free;
 	if (pmd_bad(*pmd)) {

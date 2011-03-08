@@ -74,6 +74,10 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 	if (!mm)
 		mm = &init_mm;
 
+#ifdef CONFIG_ARM_FCSE
+	printk(KERN_ALERT "fcse pid: %ld, 0x%08lx\n",
+	       mm->context.fcse.pid >> FCSE_PID_SHIFT, mm->context.fcse.pid);
+#endif /* CONFIG_ARM_FCSE */
 	printk(KERN_ALERT "pgd = %p\n", mm->pgd);
 	pgd = pgd_offset(mm, addr);
 	printk(KERN_ALERT "[%08lx] *pgd=%08lx", addr, pgd_val(*pgd));
@@ -162,10 +166,20 @@ __do_user_fault(struct task_struct *tsk, unsigned long addr,
 	if (user_debug & UDBG_SEGV) {
 		printk(KERN_DEBUG "%s: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n",
 		       tsk->comm, sig, addr, fsr);
+#ifdef CONFIG_ARM_FCSE_DYNPID
+		/* Disable preemption to avoid page tables changing under our
+		   feet */
+		preempt_disable();
+#endif /* CONFIG_ARM_FCSE_DYNPID */
 		show_pte(tsk->mm, addr);
+#ifdef CONFIG_ARM_FCSE_DYNPID
+		preempt_enable();
+#endif /* CONFIG_ARM_FCSE_DYNPID */
 		show_regs(regs);
 	}
 #endif
+
+	fcse_notify_segv(tsk->mm, addr, regs);
 
 	tsk->thread.address = addr;
 	tsk->thread.error_code = fsr;
