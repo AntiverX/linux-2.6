@@ -5,8 +5,8 @@ include /usr/share/quilt/quilt.make
 
 export DH_VERBOSE=1
 
-VERSION_EXTRA=$(shell dpkg-parsechangelog | sed -n 's/^Version: //p' | sed -e 's/-[^-]*//')
-VERSION_FULL=2.6.34-$(VERSION_EXTRA)
+VERSION_EXTRA=qtmoko
+VERSION_FULL=2.6.37-$(VERSION_EXTRA)
 
 
 build: build-stamp

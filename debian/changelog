@@ -1,3 +1,11 @@
+linux-2.6-qtmoko (v34-1) unstable; urgency=low
+
+  * Update sources to 2.6.37 from openmoko git
+  * Port qtmoko patches from 2.6.34
+  * QtMoko config
+
+ -- Radek Polak <psonek2@seznam.cz>  Wed, 23 Mar 2011 14:33:56 +0100
+
 linux-2.6-openmoko (20101108.git1508bbb5-1) pkg-fso; urgency=low
 
   * Merge from qtmoko-v29
