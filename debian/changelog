@@ -1,3 +1,9 @@
+linux-2.6-qtmoko (37-1) unstable; urgency=low
+
+  * GTA04 based on https://github.com/goldelico/gta04-kernel
+
+ -- Radek Polak <psonek2@seznam.cz>  Mon, 28 Mar 2011 20:43:56 +0100
+
 linux-2.6-qtmoko (v34-1) unstable; urgency=low
 
   * QtMoko sources

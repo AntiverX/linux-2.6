@@ -6,18 +6,16 @@ include /usr/share/quilt/quilt.make
 export DH_VERBOSE=1
 
 VERSION_EXTRA=qtmoko
-VERSION_FULL=2.6.34-$(VERSION_EXTRA)
+VERSION_FULL=2.6.32-$(VERSION_EXTRA)
 
 
 build: build-stamp
 build-stamp: $(QUILT_STAMPFN)
 	dh_testdir
 
-	# Configure the kernel for the Freerunner.
-	cp -f debian/config.gta02 .config
-	yes "" | $(MAKE) ARCH=arm oldconfig
-
-	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA)
+	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) omap3_gta04_qtmoko_defconfig
+	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) uImage
+	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) modules
 
 	# Prepare postinst/prerm
 	for I in postinst prerm; do \
@@ -46,16 +44,9 @@ install-stamp: build
 	dh_prep
 	dh_installdirs
 
-	# Generate the uImage.
-	objcopy -O binary -R .note -R .comment \
-		-S arch/arm/boot/compressed/vmlinux linux.bin
-	mkimage -A arm -O linux -T kernel -C none -a 30008000 \
-		-e 30008000 -n "Debian FreeRunner Kernel" -d linux.bin \
-		uImage.bin-$(VERSION_FULL)
-
 	# Install the uImage (this is an ugly hack, I know)
 	mkdir `pwd`/debian/`dh_listpackages`/boot/
-	cp uImage.bin-$(VERSION_FULL) `pwd`/debian/`dh_listpackages`/boot/
+	cp arch/arm/boot/uImage `pwd`/debian/`dh_listpackages`/boot/
 
 	# Install the System.map
 	cp System.map `pwd`/debian/`dh_listpackages`/boot/System.map-$(VERSION_FULL)
