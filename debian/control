@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 7), quilt (>= 0.40), uboot-mkimage
 Vcs-Git: http://git.debian.org/git/pkg-fso/linux-2.6-openmoko.git
 Vcs-Browser: http://git.debian.org/?p=pkg-fso/linux-2.6-openmoko.git;a=summary
 
-Package: linux-image-2.6.34-qtmoko-gta04
+Package: linux-image-2.6.32-qtmoko-gta04
 Architecture: armel
 Section: admin
 Depends: module-init-tools
