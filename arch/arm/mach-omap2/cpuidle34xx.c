@@ -104,6 +104,8 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
 	struct timespec ts_preidle, ts_postidle, ts_idle;
 	u32 mpu_state = cx->mpu_state, core_state = cx->core_state;
 	int idle_time;
+	extern int omap_hdq_can_sleep(void);
+	int can_sleep = omap_hdq_can_sleep();
 
 	/* Used to keep track of the total time in idle */
 	getnstimeofday(&ts_preidle);
@@ -118,7 +120,7 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
 		goto return_sleep_time;
 
 	/* Deny idle for C1 */
-	if (index == 0) {
+	if (index == 0 || !can_sleep) {
 		pwrdm_for_each_clkdm(mpu_pd, _cpuidle_deny_idle);
 		pwrdm_for_each_clkdm(core_pd, _cpuidle_deny_idle);
 	}
@@ -127,7 +129,7 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
 	omap_sram_idle();
 
 	/* Re-allow idle for C1 */
-	if (index == 0) {
+	if (index == 0 || !can_sleep) {
 		pwrdm_for_each_clkdm(mpu_pd, _cpuidle_allow_idle);
 		pwrdm_for_each_clkdm(core_pd, _cpuidle_allow_idle);
 	}
@@ -172,7 +174,7 @@ static int next_valid_state(struct cpuidle_device *dev,
 	u32 core_deepest_state = PWRDM_POWER_RET;
 	int next_index = -1;
 
-	if (enable_off_mode) {
+	if (1 || enable_off_mode) {
 		mpu_deepest_state = PWRDM_POWER_OFF;
 		/*
 		 * Erratum i583: valable for ES rev < Es1.2 on 3630.
@@ -182,6 +184,9 @@ static int next_valid_state(struct cpuidle_device *dev,
 		if (!IS_PM34XX_ERRATUM(PM_SDRC_WAKEUP_ERRATUM_i583))
 			core_deepest_state = PWRDM_POWER_OFF;
 	}
+
+	if (!omap_uart_can_sleep())
+		core_deepest_state = PWRDM_POWER_RET;
 
 	/* Check if current state is valid */
 	if ((cx->valid) &&
@@ -243,11 +248,6 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 	u32 core_next_state, per_next_state = 0, per_saved_state = 0, cam_state;
 	struct omap3_idle_statedata *cx;
 	int ret;
-
-	if (!omap3_can_sleep()) {
-		new_state_idx = drv->safe_state_index;
-		goto select_state;
-	}
 
 	/*
 	 * Prevent idle completely if CAM is active.
