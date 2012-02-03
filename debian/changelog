@@ -1,3 +1,9 @@
+linux-2.6-qtmoko (v38-1) unstable; urgency=low
+
+  * No changes since v34
+
+ -- Radek Polak <psonek2@seznam.cz>  Fri, 3 Feb 2012 10:13:56 +0100
+
 linux-2.6-qtmoko (v34-1) unstable; urgency=low
 
   * QtMoko sources
