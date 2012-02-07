@@ -1,3 +1,9 @@
+linux-3.2-qtmoko (39-1) unstable; urgency=low
+
+  * Rebuilt with v39 version
+
+ -- Radek Polak <psonek2@seznam.cz>  Tue, 07 Feb 2012 06:21:56 +0100
+
 linux-3.2-qtmoko (38-1) unstable; urgency=low
 
   * GTA04 based on http://neil.brown.name/git?p=gta04;a=shortlog;h=refs/heads/3.2-gta04
