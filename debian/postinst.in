@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+VERSION=@PACKAGE_VERSION@
+
+# Generate the depmod modules.* files
+if [ "$1" = "configure" ]; then
+    depmod -a -F "/boot/System.map-$VERSION" "$VERSION"
+fi
