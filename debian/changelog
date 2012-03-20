@@ -1,3 +1,11 @@
+linux-3.2-qtmoko (42-1) unstable; urgency=low
+
+  * Fixed bluetooth
+  * Enabled ubifs and squashfs
+  * Building with gta04-init (initramfs with rootfs menu)
+
+ -- Radek Polak <psonek2@seznam.cz>  Tue, 20 Mar 2012 21:27:56 +0100
+
 linux-3.2-qtmoko (41-1) unstable; urgency=low
 
   * Fixes for RTC
