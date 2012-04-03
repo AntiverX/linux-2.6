@@ -45,5 +45,7 @@ static int android_bind_config(struct usb_configuration *c);
 static void android_unbind_config(struct usb_configuration *c);
 static int android_enable_function(struct android_dev *dev, char *name);
 static int android_disable_function(struct android_dev *dev, char *name);
+static int android_enable(struct android_dev *dev, int enable);
+static void android_enable_from_enabled_functions(struct android_dev *dev);
 
 #endif

@@ -716,9 +716,12 @@ static int android_enable_function(struct android_dev *dev, char *name)
 	while ((f = *functions++)) {
 		if (!strcmp(name, f->name)) {
 			list_add_tail(&f->enabled_list, &dev->enabled_functions);
+			android_enable_from_enabled_functions(dev);
 			return 0;
 		}
 	}
+
+	android_enable_from_enabled_functions(dev);
 	return -EINVAL;
 }
 
@@ -744,6 +747,8 @@ static int android_disable_function(struct android_dev *dev, char *name)
 	list_for_each_entry(f, &enabled_list_new, enabled_list) {
 		list_add_tail(&f->enabled_list, &dev->enabled_functions);
 	}
+
+	android_enable_from_enabled_functions(dev);
 
 	return 0;
 }
@@ -776,6 +781,16 @@ static int android_enable(struct android_dev *dev, int enable)
 	}
 
 	return 0;
+}
+
+static void android_enable_from_enabled_functions(struct android_dev *dev)
+{
+	// enabled functions list is empty: enable android usb gadget
+	if (list_empty(&dev->enabled_functions) == 1) {
+		android_enable(dev, 0);
+	} else {
+		android_enable(dev, 1);
+	}
 }
 
 /*-------------------------------------------------------------------------*/
