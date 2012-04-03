@@ -32,6 +32,7 @@
 #include <linux/usb/gadget.h>
 
 #include "gadget_chips.h"
+#include "android.h"
 
 /*
  * Kbuild is not very cooperative with respect to linking separately
@@ -66,49 +67,6 @@ static const char longname[] = "Gadget Android";
 /* Default vendor and product IDs, overridden by userspace */
 #define VENDOR_ID		0x18D1
 #define PRODUCT_ID		0x0001
-
-struct android_usb_function {
-	char *name;
-	void *config;
-
-	struct device *dev;
-	char *dev_name;
-	struct device_attribute **attributes;
-
-	/* for android_dev.enabled_functions */
-	struct list_head enabled_list;
-
-	/* Optional: initialization during gadget bind */
-	int (*init)(struct android_usb_function *, struct usb_composite_dev *);
-	/* Optional: cleanup during gadget unbind */
-	void (*cleanup)(struct android_usb_function *);
-
-	int (*bind_config)(struct android_usb_function *, struct usb_configuration *);
-
-	/* Optional: called when the configuration is removed */
-	void (*unbind_config)(struct android_usb_function *, struct usb_configuration *);
-	/* Optional: handle ctrl requests before the device is configured */
-	int (*ctrlrequest)(struct android_usb_function *,
-					struct usb_composite_dev *,
-					const struct usb_ctrlrequest *);
-};
-
-struct android_dev {
-	struct android_usb_function **functions;
-	struct list_head enabled_functions;
-	struct usb_composite_dev *cdev;
-	struct device *dev;
-
-	bool enabled;
-	bool connected;
-	bool sw_connected;
-	struct work_struct work;
-};
-
-static struct class *android_class;
-static struct android_dev *_android_dev;
-static int android_bind_config(struct usb_configuration *c);
-static void android_unbind_config(struct usb_configuration *c);
 
 /* string IDs are assigned dynamically */
 #define STRING_MANUFACTURER_IDX		0
@@ -764,6 +722,62 @@ static int android_enable_function(struct android_dev *dev, char *name)
 	return -EINVAL;
 }
 
+static int android_disable_function(struct android_dev *dev, char *name)
+{
+	struct android_usb_function *f;
+	struct list_head enabled_list_new;
+
+	// Init the new list
+	INIT_LIST_HEAD(&enabled_list_new);
+
+	// Copy all the enties that are not adb in the new list
+	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
+		if (strcmp(name, f->name) != 0) {
+			list_add_tail(&f->enabled_list, &enabled_list_new);
+		}
+	}
+
+	// Clear the enabled functions list
+	INIT_LIST_HEAD(&dev->enabled_functions);
+
+	// Copy each entry of the new list to the enabled functions list
+	list_for_each_entry(f, &enabled_list_new, enabled_list) {
+		list_add_tail(&f->enabled_list, &dev->enabled_functions);
+	}
+
+	return 0;
+}
+
+static int android_enable(struct android_dev *dev, int enable)
+{
+	struct usb_composite_dev *cdev = dev->cdev;
+
+	if (enable && !dev->enabled) {
+		printk(KERN_INFO "android_usb: enabling\n");
+		/* update values in composite driver's copy of device descriptor */
+		cdev->desc.idVendor = device_desc.idVendor;
+		cdev->desc.idProduct = device_desc.idProduct;
+		cdev->desc.bcdDevice = device_desc.bcdDevice;
+		cdev->desc.bDeviceClass = device_desc.bDeviceClass;
+		cdev->desc.bDeviceSubClass = device_desc.bDeviceSubClass;
+		cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
+		usb_add_config(cdev, &android_config_driver,
+					android_bind_config);
+		usb_gadget_connect(cdev->gadget);
+		dev->enabled = true;
+	} else if (!enable && dev->enabled) {
+		printk(KERN_INFO "android_usb: disabling\n");
+		usb_gadget_disconnect(cdev->gadget);
+		usb_remove_config(cdev, &android_config_driver);
+		dev->enabled = false;
+	} else {
+		pr_err("android_usb: already %s\n",
+				dev->enabled ? "enabled" : "disabled");
+	}
+
+	return 0;
+}
+
 /*-------------------------------------------------------------------------*/
 /* /sys/class/android_usb/android%d/ interface */
 
@@ -818,30 +832,12 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			    const char *buff, size_t size)
 {
 	struct android_dev *dev = dev_get_drvdata(pdev);
-	struct usb_composite_dev *cdev = dev->cdev;
 	int enabled = 0;
 
 	sscanf(buff, "%d", &enabled);
-	if (enabled && !dev->enabled) {
-		/* update values in composite driver's copy of device descriptor */
-		cdev->desc.idVendor = device_desc.idVendor;
-		cdev->desc.idProduct = device_desc.idProduct;
-		cdev->desc.bcdDevice = device_desc.bcdDevice;
-		cdev->desc.bDeviceClass = device_desc.bDeviceClass;
-		cdev->desc.bDeviceSubClass = device_desc.bDeviceSubClass;
-		cdev->desc.bDeviceProtocol = device_desc.bDeviceProtocol;
-		usb_add_config(cdev, &android_config_driver,
-					android_bind_config);
-		usb_gadget_connect(cdev->gadget);
-		dev->enabled = true;
-	} else if (!enabled && dev->enabled) {
-		usb_gadget_disconnect(cdev->gadget);
-		usb_remove_config(cdev, &android_config_driver);
-		dev->enabled = false;
-	} else {
-		pr_err("android_usb: already %s\n",
-				dev->enabled ? "enabled" : "disabled");
-	}
+
+	android_enable(dev, enabled);
+
 	return size;
 }
 
