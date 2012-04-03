@@ -3241,6 +3241,7 @@ static int nand_panic_write(struct mtd_info *mtd, loff_t to, size_t len,
 			    size_t *retlen, const u_char *buf)
 {
 	struct nand_chip *chip = mtd->priv;
+	struct mtd_oob_ops ops;
 	int ret;
 
 	/* Do not allow reads past end of device */
@@ -3251,13 +3252,13 @@ static int nand_panic_write(struct mtd_info *mtd, loff_t to, size_t len,
 
 	nand_panic_wait(mtd);
 
-	chip->ops.len = len;
-	chip->ops.datbuf = (uint8_t *)buf;
-	chip->ops.oobbuf = NULL;
+	ops.len = len;
+	ops.datbuf = (uint8_t *)buf;
+	ops.oobbuf = NULL;
 
-	ret = nand_do_write_ops(mtd, to, &chip->ops);
+	ret = nand_do_write_ops(mtd, to, &ops);
 
-	*retlen = chip->ops.retlen;
+	*retlen = ops.retlen;
 	return ret;
 }
 
