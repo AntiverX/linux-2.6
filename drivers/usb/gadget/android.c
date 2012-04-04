@@ -45,6 +45,7 @@
 #include "config.c"
 #include "epautoconf.c"
 #include "composite.c"
+#include "android_compat.c"
 
 #include "f_mass_storage.c"
 #include "u_serial.c"
@@ -1159,6 +1160,11 @@ static int __init init(void)
 	composite_driver.setup = android_setup;
 	composite_driver.disconnect = android_disconnect;
 
+	err = android_compat_init();
+
+	if (err)
+		return err;
+
 	return usb_composite_probe(&android_usb_driver, android_bind);
 }
 module_init(init);
@@ -1166,6 +1172,7 @@ module_init(init);
 static void __exit cleanup(void)
 {
 	usb_composite_unregister(&android_usb_driver);
+	android_compat_cleanup();
 	class_destroy(android_class);
 	kfree(_android_dev);
 	_android_dev = NULL;
