@@ -710,6 +710,18 @@ android_unbind_enabled_functions(struct android_dev *dev,
 	}
 }
 
+static int android_check_function_enabled(struct android_dev *dev, char *name)
+{
+	struct android_usb_function *f;
+
+	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
+		if (!strcmp(f->name, name))
+			return 1;
+	}
+
+	return 0;
+}
+
 static int android_enable_function(struct android_dev *dev, char *name)
 {
 	struct android_usb_function **functions = dev->functions;
@@ -717,41 +729,25 @@ static int android_enable_function(struct android_dev *dev, char *name)
 	while ((f = *functions++)) {
 		if (!strcmp(name, f->name)) {
 			list_add_tail(&f->enabled_list, &dev->enabled_functions);
-			android_enable_from_enabled_functions(dev);
 			return 0;
 		}
 	}
 
-	android_enable_from_enabled_functions(dev);
 	return -EINVAL;
 }
 
 static int android_disable_function(struct android_dev *dev, char *name)
 {
 	struct android_usb_function *f;
-	struct list_head enabled_list_new;
 
-	// Init the new list
-	INIT_LIST_HEAD(&enabled_list_new);
-
-	// Copy all the enties that are not adb in the new list
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
-		if (strcmp(name, f->name) != 0) {
-			list_add_tail(&f->enabled_list, &enabled_list_new);
+		if (!strcmp(name, f->name)) {
+			__list_del_entry(&f->enabled_list);
+			return 0;
 		}
 	}
 
-	// Clear the enabled functions list
-	INIT_LIST_HEAD(&dev->enabled_functions);
-
-	// Copy each entry of the new list to the enabled functions list
-	list_for_each_entry(f, &enabled_list_new, enabled_list) {
-		list_add_tail(&f->enabled_list, &dev->enabled_functions);
-	}
-
-	android_enable_from_enabled_functions(dev);
-
-	return 0;
+	return -EINVAL;
 }
 
 static int android_enable(struct android_dev *dev, int enable)
@@ -782,16 +778,6 @@ static int android_enable(struct android_dev *dev, int enable)
 	}
 
 	return 0;
-}
-
-static void android_enable_from_enabled_functions(struct android_dev *dev)
-{
-	// enabled functions list is empty: enable android usb gadget
-	if (list_empty(&dev->enabled_functions) == 1) {
-		android_enable(dev, 0);
-	} else {
-		android_enable(dev, 1);
-	}
 }
 
 /*-------------------------------------------------------------------------*/
