@@ -59,16 +59,16 @@ static int android_compat_disable_function(struct android_dev *dev, char *name)
 {
 	int enabled = android_check_function_enabled(dev, name);
 	int err;
-printk(KERN_ERR "passed check enabled\n");
+
 	if(!enabled) {
 		printk(KERN_INFO "android_compat_enable_function: %s function already disabled!\n", name);
 		return 0;
 	}
 
 	err = android_disable_function(dev, name);
-printk(KERN_ERR "passed dissable function\n");
+
 	android_compat_toggle(dev);
-printk(KERN_ERR "passed dissable enablefromenablefunc\n");
+
 	return err;
 }
 
