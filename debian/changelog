@@ -1,3 +1,7 @@
+linux-3.2-qtmoko (44-1) unstable; urgency=low
+
+  * Updated gta04-init to allow boot from any device and subdir
+
 linux-3.2-qtmoko (43-1) unstable; urgency=low
 
   * Updated to latest NeilBrown's 3.2 kernel
