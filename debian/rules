@@ -13,7 +13,7 @@ build: build-stamp
 build-stamp: $(QUILT_STAMPFN)
 	dh_testdir
 
-	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) gta04a3_nodebug_defconfig
+	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) gta04a3_qtmoko_defconfig
 	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) uImage
 	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA) modules
 
