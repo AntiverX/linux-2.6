@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+VERSION=@PACKAGE_VERSION@
+
+# Remove the depmod modules.* files
+if [ "$1" = "remove" -o "$1" = "upgrade" ]; then
+    MODULES_BASE="/lib/modules/$VERSION/"
+    for I in modules.alias modules.alias.bin \
+	modules.dep modules.dep.bin \
+	modules.symbols modules.symbols.bin; do
+	rm -f "$MODULES_BASE/$I"
+    done
+fi
