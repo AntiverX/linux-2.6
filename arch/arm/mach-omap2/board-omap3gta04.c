@@ -520,11 +520,9 @@ static struct regulator_init_data gta04_vaux2 = {
 		.name			= "VAUX2",
 		.min_uV			= 2800000,
 		.max_uV			= 2800000,
-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL
-					   | REGULATOR_MODE_STANDBY),
-		.valid_ops_mask		= (REGULATOR_CHANGE_VOLTAGE
-					   | REGULATOR_CHANGE_MODE
-					   | REGULATOR_CHANGE_STATUS),
+		.always_on		= 1,
+		.valid_modes_mask	= REGULATOR_MODE_NORMAL,
+		.valid_ops_mask		= 0,
 	},
 	.num_consumer_supplies	= 1,
 	.consumer_supplies	= &gta04_vaux2_supply,
@@ -641,9 +639,14 @@ static struct twl4030_usb_data gta04_usb_data = {
 
 static struct twl4030_codec_data omap3_codec;
 
+static struct twl4030_vibra_data gta04_vibra_data = {
+	.coexist	=	0,
+};
+
 static struct twl4030_audio_data omap3_audio_pdata = {
 	.audio_mclk = 26000000,
 	.codec = &omap3_codec,
+	.vibra = &gta04_vibra_data,
 };
 
 static struct twl4030_madc_platform_data gta04_madc_data = {
@@ -1138,9 +1141,11 @@ static struct omap_board_mux board_mux[] __initdata = {
 	{ .reg_offset = OMAP_MUX_TERMINATOR },
 };
 
+struct wakeup_source *wake_3g;
 static irqreturn_t wake_3G_irq(int irq, void *handle)
 {
 	printk("3G Wakeup\n");
+	__pm_wakeup_event(wake_3g, 0);
 	return IRQ_HANDLED;
 }
 
@@ -1158,6 +1163,8 @@ static int __init wake_3G_init(void)
 	gpio_export(WO3G_GPIO, 0);
 //	gpio_set_debounce(WO3G_GPIO, 350);
 	irq_set_irq_wake(OMAP_GPIO_IRQ(WO3G_GPIO), 1);
+
+	wake_3g = wakeup_source_register("3g");
 
 	err = request_irq(OMAP_GPIO_IRQ(WO3G_GPIO),
 			  wake_3G_irq, IRQF_SHARED|IRQF_TRIGGER_RISING,
