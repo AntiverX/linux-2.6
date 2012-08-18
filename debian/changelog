@@ -1,8 +1,14 @@
-linux-2.6-qtmoko (v44-1) unstable; urgency=low
+linux-2.6-qtmoko (47-1) unstable; urgency=low
 
-  * No changes since v38
+  * No changes since v47
 
- -- Radek Polak <psonek2@seznam.cz>  Fri, 13 Apr 2012 7:56:56 +0100
+ -- Radek Polak <psonek2@seznam.cz>  Sat, 18 Aug 2012 22:25:56 +0100
+
+linux-2.6-qtmoko (45-1) unstable; urgency=low
+
+  * No changes since v44
+
+ -- Radek Polak <psonek2@seznam.cz>  Mon, 09 Jun 2012 22:11:56 +0100
 
 linux-2.6-qtmoko (v38-1) unstable; urgency=low
 
