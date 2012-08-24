@@ -1,4 +1,4 @@
-Source: linux-3.4-qtmoko
+Source: linux-3.5-qtmoko
 Section: devel
 Priority: extra
 Maintainer: Radek Polak <psonek2@seznam.cz>
@@ -8,13 +8,13 @@ Build-Depends: debhelper (>= 7), quilt (>= 0.40), uboot-mkimage
 Vcs-Git: git://neil.brown.name/gta04
 Vcs-Browser: http://neil.brown.name/git?p=gta04;a=summary
 
-Package: linux-image-3.4-qtmoko-gta04
+Package: linux-image-3.5-qtmoko-gta04
 Architecture: armel
 Section: admin
 Depends: module-init-tools
-Description: Linux 3.4 kernel image for Goldelico GTA04 phone
+Description: Linux 3.5 kernel image for Goldelico GTA04 phone
  This package provides the binary image and pre-built loadable modules for
- Linux kernel 3.4 on the Goldelico GTA04 as shipped by Qtmoko distribution
+ Linux kernel 3.5 on the Goldelico GTA04 as shipped by Qtmoko distribution
  (which is a Debian derivative with manually added  Qt Extended). The kernel
- is based upon 3.4-gta04 branch at http://neil.brown.name/git?p=gta04;a=summary
+ is based upon 3.5-gta04 branch at http://neil.brown.name/git?p=gta04;a=summary
 

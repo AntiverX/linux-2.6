@@ -6,7 +6,7 @@ include /usr/share/quilt/quilt.make
 export DH_VERBOSE=1
 
 VERSION_EXTRA=gta04
-VERSION_FULL=3.4.3-$(VERSION_EXTRA)
+VERSION_FULL=3.5.0-$(VERSION_EXTRA)
 
 
 build: build-stamp
