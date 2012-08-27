@@ -5,7 +5,7 @@ include /usr/share/quilt/quilt.make
 
 export DH_VERBOSE=1
 
-VERSION_EXTRA=gta04
+VERSION_EXTRA=gta04-qtmoko-v48
 VERSION_FULL=3.5.0-$(VERSION_EXTRA)
 
 
