@@ -1,3 +1,9 @@
+linux-3.5-qtmoko (49-1) unstable; urgency=low
+
+  * Regenerate config with CONFIG_SENSORS_TWL4030_MADC=y
+
+ -- Radek Polak <psonek2@seznam.cz>  Mon, 17 Sep 2012 09:30:56 +0100
+
 linux-3.5-qtmoko (48-1) unstable; urgency=low
 
   * Updated to latest NeilBrown's 3.5 kernel
