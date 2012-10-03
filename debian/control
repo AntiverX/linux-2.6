@@ -9,7 +9,7 @@ Vcs-Git: git://neil.brown.name/gta04
 Vcs-Browser: http://neil.brown.name/git?p=gta04;a=summary
 
 Package: linux-image-3.5-qtmoko-gta04
-Architecture: armel
+Architecture: any
 Section: admin
 Depends: module-init-tools
 Description: Linux 3.5 kernel image for Goldelico GTA04 phone
