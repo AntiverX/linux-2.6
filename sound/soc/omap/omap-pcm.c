@@ -140,6 +140,7 @@ static int omap_pcm_hw_free(struct snd_pcm_substream *substream)
 	if (prtd->dma_data == NULL)
 		return 0;
 
+	omap_stop_dma(prtd->dma_ch);
 	omap_dma_unlink_lch(prtd->dma_ch, prtd->dma_ch);
 	omap_free_dma(prtd->dma_ch);
 	prtd->dma_data = NULL;
