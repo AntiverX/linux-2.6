@@ -1,3 +1,10 @@
+linux-3.5-qtmoko (50-1) unstable; urgency=low
+
+  * Extended cmd line to allow uboot passing root
+  * Backport touchscreen pressure sysfs node
+
+ -- Radek Polak <psonek2@seznam.cz>  Wed, 21 Nov 2012 22:17:56 +0100
+
 linux-3.5-qtmoko (49-1) unstable; urgency=low
 
   * Regenerate config with CONFIG_SENSORS_TWL4030_MADC=y
