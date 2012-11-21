@@ -105,11 +105,10 @@ static ssize_t show_data(struct device *dev, struct device_attribute *attr, char
 	struct i2c_client *client = to_i2c_client(dev);
 	struct tsc2007	*ts = i2c_get_clientdata(client);
 	/* FIXME: decode which attribute we want to read */
-	return sprintf(buf, "t0=%u,t1=%u,aux=%u,pd=%d,p=%u,r=%uOhm\n",
+	return sprintf(buf, "t0=%u,t1=%u,aux=%u,p=%u,r=%uOhm\n",
 				   ts->temp0,
 				   ts->temp1,
 				   ts->aux,
-				   ts->pendown,
 				   ts->pressure,
 				   ts->pressure > 0 ? (4096 * (u32)ts->x_plate_ohms) / ts->pressure : 65535);
 }
@@ -119,7 +118,6 @@ static DEVICE_ATTR(temp1, S_IRUGO, show_data, NULL);
 static DEVICE_ATTR(pressure, S_IRUGO, show_data, NULL);
 static DEVICE_ATTR(resistance, S_IRUGO, show_data, NULL);
 static DEVICE_ATTR(aux, S_IRUGO, show_data, NULL);
-static DEVICE_ATTR(pendown, S_IRUGO, show_data, NULL);
 /* FIXME: we could also report raw x,y,z1,z2 values */
 
 static struct attribute *tsc2007_attributes[] = {
@@ -128,7 +126,6 @@ static struct attribute *tsc2007_attributes[] = {
 	&dev_attr_aux.attr,
 	&dev_attr_resistance.attr,
 	&dev_attr_pressure.attr,
-	&dev_attr_pendown.attr,
 	NULL
 };
 
