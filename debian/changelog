@@ -1,3 +1,9 @@
+linux-3.5-qtmoko (51-1) unstable; urgency=low
+
+  * TODO: copy also bootargs.scr together with kernel
+
+ -- Radek Polak <psonek2@seznam.cz>  Sun, 25 Nov 2012 00:06:56 +0100
+
 linux-3.5-qtmoko (50-1) unstable; urgency=low
 
   * Extended cmd line to allow uboot passing root
