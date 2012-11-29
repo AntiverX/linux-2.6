@@ -44,13 +44,15 @@ EXPORT_SYMBOL_GPL(gta02_pm_gps_is_on);
 static void gps_pwron_set(int on, int ignore_state)
 {
 	if (on) {
-		/* return UART pins to being UART pins */
-		s3c2410_gpio_cfgpin(S3C2410_GPH(4), S3C2410_GPH4_TXD1);
-		/* remove pulldown now it won't be floating any more */
-		s3c2410_gpio_pullup(S3C2410_GPH(5), 0);
-
 		if (!gta02_gps.power_was_on || ignore_state)
 			regulator_enable(gta02_gps.regulator);
+
+		/* return UART pins to being UART pins */
+		s3c2410_gpio_cfgpin(S3C2410_GPH(4), S3C2410_GPH4_TXD1);
+		s3c2410_gpio_cfgpin(S3C2410_GPH(5), S3C2410_GPH5_RXD1);
+
+		/* remove pulldown now it won't be floating any more */
+		s3c2410_gpio_pullup(S3C2410_GPH(5), 0);
 	} else {
 		/*
 		 * take care not to power unpowered GPS from UART TX
