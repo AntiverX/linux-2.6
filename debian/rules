@@ -14,7 +14,7 @@ build-stamp: $(QUILT_STAMPFN)
 	dh_testdir
 
 	# Configure the kernel for the Freerunner.
-	cp -f debian/config.gta02 .config
+	cp -f arch/arm/configs/gta02_defconfig .config
 	yes "" | $(MAKE) ARCH=arm oldconfig
 
 	$(MAKE) ARCH=arm EXTRAVERSION=-$(VERSION_EXTRA)
