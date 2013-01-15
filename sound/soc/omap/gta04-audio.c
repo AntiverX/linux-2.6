@@ -168,7 +168,7 @@ static void gta04_audio_jack_work(struct work_struct *work)
 
 	val = twl4030_get_madc_conversion(7);
 	if (val < 0)
-		got out;
+		goto out;
 	/* On my device:
 	 * open circuit = around 20
 	 * short circuit = around 800
