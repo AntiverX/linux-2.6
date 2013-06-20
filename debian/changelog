@@ -2,6 +2,8 @@ linux-3.7-qtmoko (56-1) unstable; urgency=low
 
   * Rebased qtmoko changes on top of goldelico's neil-plus branch
 
+ -- Radek Polak <psonek2@seznam.cz>  Thu, 20 Jun 2013 11:32:56 +0100
+  
 linux-3.7-qtmoko (55-1) unstable; urgency=low
 
   * Nothing new
