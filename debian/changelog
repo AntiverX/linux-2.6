@@ -1,3 +1,7 @@
+linux-3.7-qtmoko (56-1) unstable; urgency=low
+
+  * Rebased qtmoko changes on top of goldelico's neil-plus branch
+
 linux-3.7-qtmoko (55-1) unstable; urgency=low
 
   * Nothing new
