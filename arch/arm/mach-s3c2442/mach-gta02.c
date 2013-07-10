@@ -1302,15 +1302,15 @@ static struct platform_device gta02_spi_gpio_dev = {
 
 static struct resource gta02_led_resources[] = {
 	{
-		.name	= "gta02-power:orange",
+		.name	= "gta02:orange:power",
 		.start	= GTA02_GPIO_PWR_LED1,
 		.end	= GTA02_GPIO_PWR_LED1,
 	}, {
-		.name	= "gta02-power:blue",
+		.name	= "gta02:blue:power",
 		.start	= GTA02_GPIO_PWR_LED2,
 		.end	= GTA02_GPIO_PWR_LED2,
 	}, {
-		.name	= "gta02-aux:red",
+		.name	= "gta02:red:aux",
 		.start	= GTA02_GPIO_AUX_LED,
 		.end	= GTA02_GPIO_AUX_LED,
 	},
