@@ -810,7 +810,7 @@ static int evdev_connect(struct input_handler *handler, struct input_dev *dev,
 	mutex_init(&evdev->mutex);
 	init_waitqueue_head(&evdev->wait);
 
-	snprintf(evdev->name, sizeof(evdev->name), "event%d", minor);
+	snprintf(evdev->name, sizeof(evdev->name), "input/event%d", minor);
 	evdev->exist = 1;
 	evdev->minor = minor;
 
